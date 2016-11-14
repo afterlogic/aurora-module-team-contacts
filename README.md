@@ -1,0 +1,1 @@
+# aurora-module-global-contacts
