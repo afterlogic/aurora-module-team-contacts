@@ -6,6 +6,7 @@ class GlobalContactsModule extends AApiModule
 	{
 		$this->subscribeEvent('Contacts::GetStorage', array($this, 'onGetStorage'));
 		$this->subscribeEvent('AdminPanelWebclient::CreateUser::after', array($this, 'onAfterCreateUser'));
+		$this->subscribeEvent('Contacts::GetContacts::before', array($this, 'onBeforeGetContacts'));
 	}
 	
 	public function onGetStorage(&$aStorages)
@@ -30,5 +31,17 @@ class GlobalContactsModule extends AApiModule
 			}
 		}
 		return false;
-	}	
+	}
+	
+	public function onBeforeGetContacts(&$aArgs, &$mResult)
+	{
+		if (isset($aArgs['Storage']) && $aArgs['Storage'] === 'global')
+		{
+			if (!isset($aArgs['Filters']) || !is_array($aArgs['Filters']))
+			{
+				$aArgs['Filters'] = array();
+			}
+			$aArgs['Filters']['Storage'] = 'global';
+		}
+	}
 }
