@@ -35,13 +35,13 @@ class GlobalContactsModule extends AApiModule
 	
 	public function onBeforeGetContacts(&$aArgs, &$mResult)
 	{
-		if (isset($aArgs['Storage']) && $aArgs['Storage'] === 'global')
+		if (isset($aArgs['Storage']) && ($aArgs['Storage'] === 'global' || $aArgs['Storage'] === 'all'))
 		{
 			if (!isset($aArgs['Filters']) || !is_array($aArgs['Filters']))
 			{
 				$aArgs['Filters'] = array();
 			}
-			$aArgs['Filters']['Storage'] = 'global';
+			$aArgs['Filters']['Storage'] = ['global', '='];
 		}
 	}
 }
