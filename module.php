@@ -6,7 +6,9 @@ class GlobalContactsModule extends AApiModule
 	{
 		$this->subscribeEvent('Contacts::GetStorage', array($this, 'onGetStorage'));
 		$this->subscribeEvent('AdminPanelWebclient::CreateUser::after', array($this, 'onAfterCreateUser'));
+		$this->subscribeEvent('AdminPanelWebclient::DeleteEntity::before', array($this, 'onBeforeDeleteEntity'));
 		$this->subscribeEvent('Contacts::GetContacts::before', array($this, 'onBeforeGetContacts'));
+		$this->subscribeEvent('Core::DoServerInitializations::after', array($this, 'onAfterDoServerInitializations'));
 	}
 	
 	public function onGetStorage(&$aStorages)
@@ -33,6 +35,29 @@ class GlobalContactsModule extends AApiModule
 		return false;
 	}
 	
+	public function onBeforeDeleteEntity(&$aArgs, &$mResult)
+	{
+		if ($aArgs['Type'] === 'User')
+		{
+			$oContactsDecorator = \CApi::GetModuleDecorator('Contacts');
+			if ($oContactsDecorator)
+			{
+				$aFilters = [
+					'$AND' => [
+						'IdUser' => [$aArgs['Id'], '='],
+						'Storage' => ['global', '=']
+					]
+				];
+				$oApiContactsManager = $oContactsDecorator->GetApiContactsManager();
+				$aUserContacts = $oApiContactsManager->getContactItems(EContactSortField::Name, ESortOrder::ASC, 0, 0, $aFilters, 0);
+				if (count($aUserContacts) === 1)
+				{
+					$oContactsDecorator->DeleteContacts([$aUserContacts[0]->iId]);
+				}
+			}
+		}
+	}
+	
 	public function onBeforeGetContacts(&$aArgs, &$mResult)
 	{
 		if (isset($aArgs['Storage']) && ($aArgs['Storage'] === 'global' || $aArgs['Storage'] === 'all'))
@@ -41,7 +66,16 @@ class GlobalContactsModule extends AApiModule
 			{
 				$aArgs['Filters'] = array();
 			}
-			$aArgs['Filters']['Storage'] = ['global', '='];
+			$oUser = \CApi::getAuthenticatedUser();
+			$aArgs['Filters'][]['$AND'] = [
+				'IdTenant' => [$oUser->IdTenant, '='],
+				'Storage' => ['global', '='],
+			];
 		}
+	}
+	
+	public function onAfterDoServerInitializations($aArgs, &$mResult)
+	{
+		//sync users with global contacts
 	}
 }
