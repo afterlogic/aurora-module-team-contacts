@@ -8,6 +8,8 @@ class GlobalContactsModule extends AApiModule
 		$this->subscribeEvent('AdminPanelWebclient::CreateUser::after', array($this, 'onAfterCreateUser'));
 		$this->subscribeEvent('AdminPanelWebclient::DeleteEntity::before', array($this, 'onBeforeDeleteEntity'));
 		$this->subscribeEvent('Contacts::GetContacts::before', array($this, 'onBeforeGetContacts'));
+		$this->subscribeEvent('Contacts::GetContacts::after', array($this, 'onAfterGetContacts'));
+		$this->subscribeEvent('Contacts::GetContact::after', array($this, 'onAfterGetContact'));
 		$this->subscribeEvent('Core::DoServerInitializations::after', array($this, 'onAfterDoServerInitializations'));
 	}
 	
@@ -71,6 +73,48 @@ class GlobalContactsModule extends AApiModule
 				'IdTenant' => [$oUser->IdTenant, '='],
 				'Storage' => ['global', '='],
 			];
+		}
+	}
+	
+	public function onAfterGetContacts($aArgs, &$mResult)
+	{
+		if (is_array($mResult) && is_array($mResult['List']))
+		{
+			foreach ($mResult['List'] as $iIndex => $aContact)
+			{
+				if ($aContact['Storage'] === 'global')
+				{
+					$iUserId = \CApi::getAuthenticatedUserId();
+					if ($aContact['IdUser'] === $iUserId)
+					{
+						$aContact['ItsMe'] = true;
+					}
+					else
+					{
+						$aContact['ReadOnly'] = true;
+					}
+					$mResult['List'][$iIndex] = $aContact;
+				}
+			}
+		}
+	}
+	
+	public function onAfterGetContact($aArgs, &$mResult)
+	{
+		if ($mResult)
+		{
+			$iUserId = \CApi::getAuthenticatedUserId();
+			if ($mResult->Storage === 'global')
+			{
+				if ($mResult->IdUser === $iUserId)
+				{
+					$mResult->ExtendedInformation['ItsMe'] = true;
+				}
+				else
+				{
+					$mResult->ExtendedInformation['ReadOnly'] = true;
+				}
+			}
 		}
 	}
 	
