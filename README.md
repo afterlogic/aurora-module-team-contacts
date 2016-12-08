@@ -1,1 +1,1 @@
-# aurora-module-global-contacts
+# aurora-module-team-contacts
