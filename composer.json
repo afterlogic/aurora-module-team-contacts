@@ -1,9 +1,9 @@
 {
-	"name": "afterlogic/aurora-module-global-contacts",
+	"name": "afterlogic/aurora-module-team-contacts",
     	"version":"0.1.0",
     	"type": "aurora-module",
     	"dist":{
-               "url":"https://github.com/afterlogic/aurora-module-global-contacts/archive/master.zip",
+               "url":"https://github.com/afterlogic/aurora-module-team-contacts/archive/master.zip",
                 "type":"zip"
         },
 	"require":{
@@ -11,6 +11,6 @@
 		"afterlogic/aurora-framework": "~0.1"
 	},
 	"extra": {
-		"installer-name": "GlobalContacts"
+		"installer-name": "TeamContacts"
 	}
 }
