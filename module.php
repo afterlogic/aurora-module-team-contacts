@@ -1,6 +1,6 @@
 <?php
 
-class GlobalContactsModule extends AApiModule
+class TeamContactsModule extends AApiModule
 {
 	public function init() 
 	{
@@ -15,7 +15,7 @@ class GlobalContactsModule extends AApiModule
 	
 	public function onGetStorage(&$aStorages)
 	{
-		$aStorages[] = 'global';
+		$aStorages[] = 'team';
 	}
 	
 	public function onAfterCreateUser($aArgs, &$mResult)
@@ -24,7 +24,7 @@ class GlobalContactsModule extends AApiModule
 		if (0 < $iUserId)
 		{
 			$aContact = array(
-				'Storage' => 'global',
+				'Storage' => 'team',
 				'PrimaryEmail' => EContactsPrimaryEmail::Business,
 				'BusinessEmail' => $aArgs['PublicId']
 			);
@@ -47,7 +47,7 @@ class GlobalContactsModule extends AApiModule
 				$aFilters = [
 					'$AND' => [
 						'IdUser' => [$aArgs['Id'], '='],
-						'Storage' => ['global', '=']
+						'Storage' => ['team', '=']
 					]
 				];
 				$oApiContactsManager = $oContactsDecorator->GetApiContactsManager();
@@ -62,7 +62,7 @@ class GlobalContactsModule extends AApiModule
 	
 	public function onBeforeGetContacts(&$aArgs, &$mResult)
 	{
-		if (isset($aArgs['Storage']) && ($aArgs['Storage'] === 'global' || $aArgs['Storage'] === 'all'))
+		if (isset($aArgs['Storage']) && ($aArgs['Storage'] === 'team' || $aArgs['Storage'] === 'all'))
 		{
 			if (!isset($aArgs['Filters']) || !is_array($aArgs['Filters']))
 			{
@@ -71,7 +71,7 @@ class GlobalContactsModule extends AApiModule
 			$oUser = \CApi::getAuthenticatedUser();
 			$aArgs['Filters'][]['$AND'] = [
 				'IdTenant' => [$oUser->IdTenant, '='],
-				'Storage' => ['global', '='],
+				'Storage' => ['team', '='],
 			];
 		}
 	}
@@ -82,7 +82,7 @@ class GlobalContactsModule extends AApiModule
 		{
 			foreach ($mResult['List'] as $iIndex => $aContact)
 			{
-				if ($aContact['Storage'] === 'global')
+				if ($aContact['Storage'] === 'team')
 				{
 					$iUserId = \CApi::getAuthenticatedUserId();
 					if ($aContact['IdUser'] === $iUserId)
@@ -104,7 +104,7 @@ class GlobalContactsModule extends AApiModule
 		if ($mResult)
 		{
 			$iUserId = \CApi::getAuthenticatedUserId();
-			if ($mResult->Storage === 'global')
+			if ($mResult->Storage === 'team')
 			{
 				if ($mResult->IdUser === $iUserId)
 				{
@@ -120,6 +120,6 @@ class GlobalContactsModule extends AApiModule
 	
 	public function onAfterDoServerInitializations($aArgs, &$mResult)
 	{
-		//sync users with global contacts
+		//sync users with team contacts
 	}
 }
