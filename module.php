@@ -19,15 +19,14 @@ class TeamContactsModule extends AApiModule
 		$aStorages[] = 'team';
 	}
 	
-	public function onAfterCreateUser($aArgs, &$mResult)
+	private function createContactForUser($iUserId, $sEmail)
 	{
-		$iUserId = isset($mResult) && (int) $mResult > 0 ? $mResult : 0;
 		if (0 < $iUserId)
 		{
 			$aContact = array(
 				'Storage' => 'team',
 				'PrimaryEmail' => EContactsPrimaryEmail::Business,
-				'BusinessEmail' => $aArgs['PublicId']
+				'BusinessEmail' => $sEmail
 			);
 			$oContactsDecorator = \CApi::GetModuleDecorator('Contacts');
 			if ($oContactsDecorator)
@@ -36,6 +35,12 @@ class TeamContactsModule extends AApiModule
 			}
 		}
 		return false;
+	}
+	
+	public function onAfterCreateUser($aArgs, &$mResult)
+	{
+		$iUserId = isset($mResult) && (int) $mResult > 0 ? $mResult : 0;
+		return $this->createContactForUser($iUserId, $aArgs['PublicId']);
 	}
 	
 	public function onBeforeDeleteEntity(&$aArgs, &$mResult)
@@ -121,6 +126,27 @@ class TeamContactsModule extends AApiModule
 	
 	public function onAfterDoServerInitializations($aArgs, &$mResult)
 	{
-		//sync users with team contacts
+		$oUser = \CApi::getAuthenticatedUser();
+		$oCoreDecorator = \CApi::GetModuleDecorator('Core');
+		$oContactsDecorator = \CApi::GetModuleDecorator('Contacts');
+		$oApiContactsManager = $oContactsDecorator ? $oContactsDecorator->GetApiContactsManager() : null;
+		if ($oApiContactsManager && $oCoreDecorator && $oUser && ($oUser->Role === \EUserRole::SuperAdmin || $oUser->Role === \EUserRole::TenantAdmin))
+		{
+			$aUsers = $oCoreDecorator->GetUserList();
+			foreach ($aUsers as $aUser)
+			{
+				$aFilters = [
+					'IdUser' => [$aUser['Id'], '='],
+					'Storage' => ['team', '='],
+				];
+
+				$aContacts = $oApiContactsManager->getContacts(EContactSortField::Name, ESortOrder::ASC, 0, 0, $aFilters, 0);
+				
+				if (count($aContacts) === 0)
+				{
+					$this->createContactForUser($aUser['Id'], $aUser['PublicId']);
+				}
+			}
+		}
 	}
 }
