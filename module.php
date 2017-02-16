@@ -60,7 +60,7 @@ class TeamContactsModule extends AApiModule
 				$aUserContacts = $oApiContactsManager->getContacts(EContactSortField::Name, ESortOrder::ASC, 0, 0, $aFilters, '');
 				if (count($aUserContacts) === 1)
 				{
-					$oContactsDecorator->DeleteContacts([$aUserContacts[0]->sUUID]);
+					$oContactsDecorator->DeleteContacts([$aUserContacts[0]->UUID]);
 				}
 			}
 		}
