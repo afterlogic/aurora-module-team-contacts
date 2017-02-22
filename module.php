@@ -1,6 +1,8 @@
 <?php
 
-class TeamContactsModule extends AApiModule
+namespace Aurora\Modules;
+
+class TeamContactsModule extends \AApiModule
 {
 	public function init() 
 	{
@@ -25,7 +27,7 @@ class TeamContactsModule extends AApiModule
 		{
 			$aContact = array(
 				'Storage' => 'team',
-				'PrimaryEmail' => EContactsPrimaryEmail::Business,
+				'PrimaryEmail' => \EContactsPrimaryEmail::Business,
 				'BusinessEmail' => $sEmail
 			);
 			$oContactsDecorator = \CApi::GetModuleDecorator('Contacts');
@@ -57,8 +59,8 @@ class TeamContactsModule extends AApiModule
 					]
 				];
 				$oApiContactsManager = $oContactsDecorator->GetApiContactsManager();
-				$aUserContacts = $oApiContactsManager->getContacts(EContactSortField::Name, ESortOrder::ASC, 0, 0, $aFilters, '');
-				if (count($aUserContacts) === 1)
+				$aUserContacts = $oApiContactsManager->getContacts(\EContactSortField::Name, \ESortOrder::ASC, 0, 0, $aFilters, '');
+				if (\count($aUserContacts) === 1)
 				{
 					$oContactsDecorator->DeleteContacts([$aUserContacts[0]->UUID]);
 				}
@@ -84,7 +86,7 @@ class TeamContactsModule extends AApiModule
 	
 	public function onAfterGetContacts($aArgs, &$mResult)
 	{
-		if (is_array($mResult) && is_array($mResult['List']))
+		if (\is_array($mResult) && \is_array($mResult['List']))
 		{
 			foreach ($mResult['List'] as $iIndex => $aContact)
 			{
@@ -140,7 +142,7 @@ class TeamContactsModule extends AApiModule
 					'Storage' => ['team', '='],
 				];
 
-				$aContacts = $oApiContactsManager->getContacts(EContactSortField::Name, ESortOrder::ASC, 0, 0, $aFilters, 0);
+				$aContacts = $oApiContactsManager->getContacts(\EContactSortField::Name, \ESortOrder::ASC, 0, 0, $aFilters, 0);
 				
 				if (count($aContacts) === 0)
 				{
