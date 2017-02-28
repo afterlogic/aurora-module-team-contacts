@@ -2,7 +2,7 @@
 
 namespace Aurora\Modules;
 
-class TeamContactsModule extends \AApiModule
+class TeamContactsModule extends \Aurora\System\AbstractModule
 {
 	public function init() 
 	{
@@ -30,7 +30,7 @@ class TeamContactsModule extends \AApiModule
 				'PrimaryEmail' => \EContactsPrimaryEmail::Business,
 				'BusinessEmail' => $sEmail
 			);
-			$oContactsDecorator = \CApi::GetModuleDecorator('Contacts');
+			$oContactsDecorator = \Aurora\System\Api::GetModuleDecorator('Contacts');
 			if ($oContactsDecorator)
 			{
 				return $oContactsDecorator->CreateContact($aContact, $iUserId);
@@ -49,7 +49,7 @@ class TeamContactsModule extends \AApiModule
 	{
 		if ($aArgs['Type'] === 'User')
 		{
-			$oContactsDecorator = \CApi::GetModuleDecorator('Contacts');
+			$oContactsDecorator = \Aurora\System\Api::GetModuleDecorator('Contacts');
 			if ($oContactsDecorator)
 			{
 				$aFilters = [
@@ -76,7 +76,7 @@ class TeamContactsModule extends \AApiModule
 			{
 				$aArgs['Filters'] = array();
 			}
-			$oUser = \CApi::getAuthenticatedUser();
+			$oUser = \Aurora\System\Api::getAuthenticatedUser();
 			$aArgs['Filters'][]['$AND'] = [
 				'IdTenant' => [$oUser->IdTenant, '='],
 				'Storage' => ['team', '='],
@@ -92,7 +92,7 @@ class TeamContactsModule extends \AApiModule
 			{
 				if ($aContact['Storage'] === 'team')
 				{
-					$iUserId = \CApi::getAuthenticatedUserId();
+					$iUserId = \Aurora\System\Api::getAuthenticatedUserId();
 					if ($aContact['IdUser'] === $iUserId)
 					{
 						$aContact['ItsMe'] = true;
@@ -111,7 +111,7 @@ class TeamContactsModule extends \AApiModule
 	{
 		if ($mResult)
 		{
-			$iUserId = \CApi::getAuthenticatedUserId();
+			$iUserId = \Aurora\System\Api::getAuthenticatedUserId();
 			if ($mResult->Storage === 'team')
 			{
 				if ($mResult->IdUser === $iUserId)
@@ -128,9 +128,9 @@ class TeamContactsModule extends \AApiModule
 	
 	public function onAfterDoServerInitializations($aArgs, &$mResult)
 	{
-		$oUser = \CApi::getAuthenticatedUser();
-		$oCoreDecorator = \CApi::GetModuleDecorator('Core');
-		$oContactsDecorator = \CApi::GetModuleDecorator('Contacts');
+		$oUser = \Aurora\System\Api::getAuthenticatedUser();
+		$oCoreDecorator = \Aurora\System\Api::GetModuleDecorator('Core');
+		$oContactsDecorator = \Aurora\System\Api::GetModuleDecorator('Contacts');
 		$oApiContactsManager = $oContactsDecorator ? $oContactsDecorator->GetApiContactsManager() : null;
 		if ($oApiContactsManager && $oCoreDecorator && $oUser && ($oUser->Role === \EUserRole::SuperAdmin || $oUser->Role === \EUserRole::TenantAdmin))
 		{
