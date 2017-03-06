@@ -1,8 +1,8 @@
 <?php
 
-namespace Aurora\Modules;
+namespace Aurora\Modules\TeamContacts;
 
-class TeamContactsModule extends \Aurora\System\Module\AbstractModule
+class Module extends \Aurora\System\Module\AbstractModule
 {
 	public function init() 
 	{
