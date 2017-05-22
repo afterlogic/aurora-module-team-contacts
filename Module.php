@@ -143,7 +143,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$oCoreDecorator = \Aurora\System\Api::GetModuleDecorator('Core');
 		$oContactsDecorator = \Aurora\System\Api::GetModuleDecorator('Contacts');
 		$oApiContactsManager = $oContactsDecorator ? $oContactsDecorator->GetApiContactsManager() : null;
-		if ($oApiContactsManager && $oCoreDecorator && $oUser && ($oUser->Role === \EUserRole::SuperAdmin || $oUser->Role === \EUserRole::TenantAdmin))
+		if ($oApiContactsManager && $oCoreDecorator && $oUser && ($oUser->Role === \Aurora\System\Enums\UserRole::SuperAdmin || $oUser->Role === \Aurora\System\Enums\UserRole::TenantAdmin))
 		{
 			$aUsers = $oCoreDecorator->GetUserList();
 			foreach ($aUsers as $aUser)
