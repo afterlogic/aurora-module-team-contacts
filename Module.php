@@ -70,7 +70,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 					]
 				];
 				$oApiContactsManager = $oContactsDecorator->GetApiContactsManager();
-				$aUserContacts = $oApiContactsManager->getContacts(\EContactSortField::Name, \ESortOrder::ASC, 0, 0, $aFilters, '');
+				$aUserContacts = $oApiContactsManager->getContacts(\EContactSortField::Name, \Aurora\System\Enums\SortOrder::ASC, 0, 0, $aFilters, '');
 				if (\count($aUserContacts) === 1)
 				{
 					$oContactsDecorator->DeleteContacts([$aUserContacts[0]->UUID]);
@@ -153,7 +153,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 					'Storage' => ['team', '='],
 				];
 
-				$aContacts = $oApiContactsManager->getContacts(\EContactSortField::Name, \ESortOrder::ASC, 0, 0, $aFilters, 0);
+				$aContacts = $oApiContactsManager->getContacts(\EContactSortField::Name, \Aurora\System\Enums\SortOrder::ASC, 0, 0, $aFilters, 0);
 				
 				if (count($aContacts) === 0)
 				{
