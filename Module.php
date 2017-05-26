@@ -41,7 +41,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 				'PrimaryEmail' => \EContactsPrimaryEmail::Business,
 				'BusinessEmail' => $sEmail
 			);
-			$oContactsDecorator = \Aurora\System\Api::GetModuleDecorator('Contacts');
+			$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
 			if ($oContactsDecorator)
 			{
 				return $oContactsDecorator->CreateContact($aContact, $iUserId);
@@ -60,7 +60,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	{
 		if ($aArgs['Type'] === 'User')
 		{
-			$oContactsDecorator = \Aurora\System\Api::GetModuleDecorator('Contacts');
+			$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
 			if ($oContactsDecorator)
 			{
 				$aFilters = [
@@ -145,8 +145,8 @@ class Module extends \Aurora\System\Module\AbstractModule
 	public function onAfterDoServerInitializations($aArgs, &$mResult)
 	{
 		$oUser = \Aurora\System\Api::getAuthenticatedUser();
-		$oCoreDecorator = \Aurora\System\Api::GetModuleDecorator('Core');
-		$oContactsDecorator = \Aurora\System\Api::GetModuleDecorator('Contacts');
+		$oCoreDecorator = \Aurora\Modules\Core\Module::Decorator();
+		$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
 		$oApiContactsManager = $oContactsDecorator ? $oContactsDecorator->GetApiContactsManager() : null;
 		if ($oApiContactsManager && $oCoreDecorator && $oUser && ($oUser->Role === \Aurora\System\Enums\UserRole::SuperAdmin || $oUser->Role === \Aurora\System\Enums\UserRole::TenantAdmin))
 		{
