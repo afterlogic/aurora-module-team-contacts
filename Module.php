@@ -18,7 +18,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	public function init() 
 	{
 		$this->subscribeEvent('Contacts::GetStorage', array($this, 'onGetStorage'));
-		$this->subscribeEvent('AdminPanelWebclient::CreateUser::after', array($this, 'onAfterCreateUser'));
+		$this->subscribeEvent('Core::CreateUser::after', array($this, 'onAfterCreateUser'));
 		$this->subscribeEvent('AdminPanelWebclient::DeleteEntity::before', array($this, 'onBeforeDeleteEntity'));
 		$this->subscribeEvent('Contacts::GetContacts::before', array($this, 'onBeforeGetContacts'));
 		$this->subscribeEvent('Contacts::Export::before', array($this, 'onBeforeExport'));
