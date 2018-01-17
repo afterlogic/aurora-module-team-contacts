@@ -19,7 +19,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	{
 		$this->subscribeEvent('Contacts::GetStorage', array($this, 'onGetStorage'));
 		$this->subscribeEvent('Core::CreateUser::after', array($this, 'onAfterCreateUser'));
-		$this->subscribeEvent('AdminPanelWebclient::DeleteEntity::before', array($this, 'onBeforeDeleteEntity'));
+		$this->subscribeEvent('Core::DeleteUser::before', array($this, 'onBeforeDeleteUser'));
 		$this->subscribeEvent('Contacts::GetContacts::before', array($this, 'onBeforeGetContacts'));
 		$this->subscribeEvent('Contacts::Export::before', array($this, 'onBeforeExport'));
 		$this->subscribeEvent('Contacts::GetContacts::after', array($this, 'onAfterGetContacts'));
@@ -56,25 +56,22 @@ class Module extends \Aurora\System\Module\AbstractModule
 		return $this->createContactForUser($iUserId, $aArgs['PublicId']);
 	}
 	
-	public function onBeforeDeleteEntity(&$aArgs, &$mResult)
+	public function onBeforeDeleteUser(&$aArgs, &$mResult)
 	{
-		if ($aArgs['Type'] === 'User')
+		$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
+		if ($oContactsDecorator)
 		{
-			$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
-			if ($oContactsDecorator)
+			$aFilters = [
+				'$AND' => [
+					'IdUser' => [$aArgs['UserId'], '='],
+					'Storage' => ['team', '=']
+				]
+			];
+			$oApiContactsManager = $oContactsDecorator->GetApiContactsManager();
+			$aUserContacts = $oApiContactsManager->getContacts(\Aurora\Modules\Contacts\Enums\SortField::Name, \Aurora\System\Enums\SortOrder::ASC, 0, 0, $aFilters, '');
+			if (\count($aUserContacts) === 1)
 			{
-				$aFilters = [
-					'$AND' => [
-						'IdUser' => [$aArgs['Id'], '='],
-						'Storage' => ['team', '=']
-					]
-				];
-				$oApiContactsManager = $oContactsDecorator->GetApiContactsManager();
-				$aUserContacts = $oApiContactsManager->getContacts(\Aurora\Modules\Contacts\Enums\SortField::Name, \Aurora\System\Enums\SortOrder::ASC, 0, 0, $aFilters, '');
-				if (\count($aUserContacts) === 1)
-				{
-					$oContactsDecorator->DeleteContacts([$aUserContacts[0]->UUID]);
-				}
+				$oContactsDecorator->DeleteContacts([$aUserContacts[0]->UUID]);
 			}
 		}
 	}
