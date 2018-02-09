@@ -85,6 +85,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 				$aArgs['Filters'] = array();
 			}
 			$oUser = \Aurora\System\Api::getAuthenticatedUser();
+			
 			$aArgs['Filters'][]['$AND'] = [
 				'IdTenant' => [$oUser->IdTenant, '='],
 				'Storage' => ['team', '='],
