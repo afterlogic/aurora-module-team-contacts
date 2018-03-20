@@ -20,8 +20,9 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$this->subscribeEvent('Contacts::GetStorage', array($this, 'onGetStorage'));
 		$this->subscribeEvent('Core::CreateUser::after', array($this, 'onAfterCreateUser'));
 		$this->subscribeEvent('Core::DeleteUser::before', array($this, 'onBeforeDeleteUser'));
-		$this->subscribeEvent('Contacts::GetContacts::before', array($this, 'onBeforeGetContacts'));
-		$this->subscribeEvent('Contacts::Export::before', array($this, 'onBeforeExport'));
+		$this->subscribeEvent('Contacts::GetContacts::before', array($this, 'prepareFiltersFromStorage'));
+		$this->subscribeEvent('Contacts::Export::before', array($this, 'prepareFiltersFromStorage'));
+		$this->subscribeEvent('Contacts::GetContactsByEmails::before', array($this, 'prepareFiltersFromStorage'));
 		$this->subscribeEvent('Contacts::GetContacts::after', array($this, 'onAfterGetContacts'));
 		$this->subscribeEvent('Contacts::GetContact::after', array($this, 'onAfterGetContact'));
 		$this->subscribeEvent('Core::DoServerInitializations::after', array($this, 'onAfterDoServerInitializations'));
@@ -76,7 +77,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		}
 	}
 	
-	public function onBeforeGetContacts(&$aArgs, &$mResult)
+	public function prepareFiltersFromStorage(&$aArgs, &$mResult)
 	{
 		if (isset($aArgs['Storage']) && ($aArgs['Storage'] === 'team' || $aArgs['Storage'] === 'all'))
 		{
@@ -91,11 +92,6 @@ class Module extends \Aurora\System\Module\AbstractModule
 				'Storage' => ['team', '='],
 			];
 		}
-	}
-	
-	public function onBeforeExport(&$aArgs, &$mResult)
-	{
-		$this->onBeforeGetContacts($aArgs, $mResult);
 	}
 	
 	public function onAfterGetContacts($aArgs, &$mResult)
