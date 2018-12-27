@@ -63,17 +63,17 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
 		if ($oContactsDecorator)
 		{
-			$aFilters = [
-				'$AND' => [
-					'IdUser' => [$aArgs['UserId'], '='],
-					'Storage' => ['team', '=']
-				]
-			];
 			$oApiContactsManager = $oContactsDecorator->GetApiContactsManager();
-			$aUserContacts = $oApiContactsManager->getContacts(\Aurora\Modules\Contacts\Enums\SortField::Name, \Aurora\System\Enums\SortOrder::ASC, 0, 0, $aFilters, '');
+			$aUserContacts = $oApiContactsManager->getContactUids([
+					'$AND' => [
+						'IdUser' => [$aArgs['UserId'], '='],
+						'Storage' => ['team', '=']
+					]
+				]			
+			);
 			if (\count($aUserContacts) === 1)
 			{
-				$oContactsDecorator->DeleteContacts([$aUserContacts[0]->UUID]);
+				$oContactsDecorator->DeleteContacts([$aUserContacts[0]]);
 			}
 		}
 	}
