@@ -153,7 +153,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 					'Storage' => ['team', '='],
 				];
 
-				$aContacts = $oApiContactsManager->getContacts(\Aurora\Modules\Contacts\Enums\SortField::Name, \Aurora\System\Enums\SortOrder::ASC, 0, 0, $aFilters, 0);
+				$aContacts = $oApiContactsManager->getContacts(\Aurora\Modules\Contacts\Enums\SortField::Name, \Aurora\System\Enums\SortOrder::ASC, 0, 0, $aFilters);
 				
 				if (count($aContacts) === 0)
 				{
