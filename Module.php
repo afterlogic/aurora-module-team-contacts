@@ -148,6 +148,11 @@ class Module extends \Aurora\System\Module\AbstractModule
 			$aUsers = $oCoreDecorator->GetUserList();
 			foreach ($aUsers as $aUser)
 			{
+				if (count($aUser) === 0)
+				{
+					continue;
+				}
+				
 				$aFilters = [
 					'IdUser' => [$aUser['Id'], '='],
 					'Storage' => ['team', '='],
