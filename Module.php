@@ -60,6 +60,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	
 	public function onBeforeDeleteUser(&$aArgs, &$mResult)
 	{
+		$sStorage = 'team';
 		$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
 		if ($oContactsDecorator)
 		{
@@ -67,13 +68,13 @@ class Module extends \Aurora\System\Module\AbstractModule
 			$aUserContacts = $oApiContactsManager->getContactUids([
 					'$AND' => [
 						'IdUser' => [$aArgs['UserId'], '='],
-						'Storage' => ['team', '=']
+						'Storage' => [$sStorage, '=']
 					]
 				]			
 			);
 			if (\count($aUserContacts) === 1)
 			{
-				$oContactsDecorator->DeleteContacts([$aUserContacts[0]]);
+				$oContactsDecorator->DeleteContacts($sStorage, [$aUserContacts[0]]);
 			}
 		}
 	}
