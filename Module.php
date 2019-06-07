@@ -27,6 +27,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$this->subscribeEvent('Contacts::GetContacts::after', array($this, 'onAfterGetContacts'));
 		$this->subscribeEvent('Contacts::GetContact::after', array($this, 'onAfterGetContact'));
 		$this->subscribeEvent('Core::DoServerInitializations::after', array($this, 'onAfterDoServerInitializations'));
+		$this->subscribeEvent('Contacts::CheckAccess::after', array($this, 'onAfterCheckAccess'));
 	}
 	
 	public function onGetStorage(&$aStorages)
@@ -165,6 +166,24 @@ class Module extends \Aurora\System\Module\AbstractModule
 				{
 					$this->createContactForUser($aUser['Id'], $aUser['PublicId']);
 				}
+			}
+		}
+	}
+
+	public function onAfterCheckAccess(&$aArgs, &$mResult)
+	{
+		$oUser = $aArgs['User'];
+		$oContact = isset($aArgs['Contact']) ? $aArgs['Contact'] : null;
+
+		if ($oContact instanceof \Aurora\Modules\Contacts\Classes\Contact && $oContact->Storage === 'team')
+		{
+			if ($oUser->Role !== \Aurora\System\Enums\UserRole::SuperAdmin && $oUser->IdTenant !== $oContact->IdTenant)
+			{
+				$mResult = false;
+			}
+			else
+			{
+				$mResult = true;
 			}
 		}
 	}
