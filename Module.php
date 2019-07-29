@@ -142,29 +142,30 @@ class Module extends \Aurora\System\Module\AbstractModule
 	public function onAfterDoServerInitializations($aArgs, &$mResult)
 	{
 		$oUser = \Aurora\System\Api::getAuthenticatedUser();
-		$oCoreDecorator = \Aurora\Modules\Core\Module::Decorator();
 		$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
 		$oApiContactsManager = $oContactsDecorator ? $oContactsDecorator->GetApiContactsManager() : null;
-		if ($oApiContactsManager && $oCoreDecorator && $oUser && ($oUser->Role === \Aurora\System\Enums\UserRole::SuperAdmin || $oUser->Role === \Aurora\System\Enums\UserRole::TenantAdmin))
+		if ($oApiContactsManager && $oUser && ($oUser->Role === \Aurora\System\Enums\UserRole::SuperAdmin || $oUser->Role === \Aurora\System\Enums\UserRole::TenantAdmin))
 		{
-			$aUsers = $oCoreDecorator->GetUserList();
-			foreach ($aUsers as $aUser)
+			$iTenantId = isset($aArgs['TenantId']) ? $aArgs['TenantId'] : 0;
+			$aUsers = \Aurora\Modules\Core\Module::Decorator()->GetUsers($iTenantId);
+			if (is_array($aUsers) && is_array($aUsers['Items']))
 			{
-				if (count($aUser) === 0)
+				foreach ($aUsers['Items'] as $aUser)
 				{
-					continue;
-				}
-				
-				$aFilters = [
-					'IdUser' => [$aUser['Id'], '='],
-					'Storage' => ['team', '='],
-				];
+					if (is_array($aUser) && isset($aUser['Id']))
+					{
+						$aFilters = [
+							'IdUser' => [$aUser['Id'], '='],
+							'Storage' => ['team', '='],
+						];
 
-				$aContacts = $oApiContactsManager->getContacts(\Aurora\Modules\Contacts\Enums\SortField::Name, \Aurora\System\Enums\SortOrder::ASC, 0, 0, $aFilters);
-				
-				if (count($aContacts) === 0)
-				{
-					$this->createContactForUser($aUser['Id'], $aUser['PublicId']);
+						$aContacts = $oApiContactsManager->getContacts(\Aurora\Modules\Contacts\Enums\SortField::Name, \Aurora\System\Enums\SortOrder::ASC, 0, 0, $aFilters);
+
+						if (count($aContacts) === 0)
+						{
+							$this->createContactForUser($aUser['Id'], $aUser['PublicId']);
+						}
+					}
 				}
 			}
 		}
