@@ -18,7 +18,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 {
 	public function init() 
 	{
-		$this->subscribeEvent('Contacts::GetStorage', array($this, 'onGetStorage'));
+		$this->subscribeEvent('Contacts::GetStorages', array($this, 'onGetStorages'));
 		$this->subscribeEvent('Core::CreateUser::after', array($this, 'onAfterCreateUser'));
 		$this->subscribeEvent('Core::DeleteUser::before', array($this, 'onBeforeDeleteUser'));
 		$this->subscribeEvent('Contacts::GetContacts::before', array($this, 'prepareFiltersFromStorage'));
@@ -27,10 +27,10 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$this->subscribeEvent('Contacts::GetContacts::after', array($this, 'onAfterGetContacts'));
 		$this->subscribeEvent('Contacts::GetContact::after', array($this, 'onAfterGetContact'));
 		$this->subscribeEvent('Core::DoServerInitializations::after', array($this, 'onAfterDoServerInitializations'));
-		$this->subscribeEvent('Contacts::CheckAccess::after', array($this, 'onAfterCheckAccess'));
+		$this->subscribeEvent('Contacts::CheckAccessToObject::after', array($this, 'onAfterCheckAccessToObject'));
 	}
 	
-	public function onGetStorage(&$aStorages)
+	public function onGetStorages(&$aStorages)
 	{
 		$aStorages[] = 'team';
 	}
@@ -171,7 +171,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		}
 	}
 
-	public function onAfterCheckAccess(&$aArgs, &$mResult)
+	public function onAfterCheckAccessToObject(&$aArgs, &$mResult)
 	{
 		$oUser = $aArgs['User'];
 		$oContact = isset($aArgs['Contact']) ? $aArgs['Contact'] : null;
