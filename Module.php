@@ -22,6 +22,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$this->subscribeEvent('Core::CreateUser::after', array($this, 'onAfterCreateUser'));
 		$this->subscribeEvent('Core::DeleteUser::before', array($this, 'onBeforeDeleteUser'));
 		$this->subscribeEvent('Contacts::GetContacts::before', array($this, 'prepareFiltersFromStorage'));
+		$this->subscribeEvent('Contacts::GetContactsInfo::before', array($this, 'prepareFiltersFromStorage'));
 		$this->subscribeEvent('Contacts::Export::before', array($this, 'prepareFiltersFromStorage'));
 		$this->subscribeEvent('Contacts::GetContactsByEmails::before', array($this, 'prepareFiltersFromStorage'));
 		$this->subscribeEvent('Contacts::GetContacts::after', array($this, 'onAfterGetContacts'));
@@ -75,7 +76,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 			);
 			if (\count($aUserContacts) === 1)
 			{
-				$oContactsDecorator->DeleteContacts($sStorage, [$aUserContacts[0]]);
+				$oContactsDecorator->DeleteContacts($aArgs['UserId'], $sStorage, [$aUserContacts[0]]);
 			}
 		}
 	}
