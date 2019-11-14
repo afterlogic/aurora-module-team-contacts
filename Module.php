@@ -38,6 +38,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	
 	private function createContactForUser($iUserId, $sEmail)
 	{
+		$mResult = false;
 		if (0 < $iUserId)
 		{
 			$aContact = array(
@@ -48,15 +49,19 @@ class Module extends \Aurora\System\Module\AbstractModule
 			$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
 			if ($oContactsDecorator)
 			{
-				return $oContactsDecorator->CreateContact($aContact, $iUserId);
+				$aCurrentUserSession = \Aurora\Api::GetUserSession();
+				\Aurora\Api::GrantAdminPrivileges();
+				$mResult =  $oContactsDecorator->CreateContact($aContact, $iUserId);
+				\Aurora\Api::SetUserSession($aCurrentUserSession);
 			}
 		}
-		return false;
+		return $mResult;
 	}
 	
 	public function onAfterCreateUser($aArgs, &$mResult)
 	{
 		$iUserId = isset($mResult) && (int) $mResult > 0 ? $mResult : 0;
+
 		return $this->createContactForUser($iUserId, $aArgs['PublicId']);
 	}
 	
