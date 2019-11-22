@@ -79,9 +79,9 @@ class Module extends \Aurora\System\Module\AbstractModule
 					]
 				]			
 			);
-			if (\count($aUserContacts) === 1)
+			if (\count($aUserContacts) !== 0)
 			{
-				$oContactsDecorator->DeleteContacts($aArgs['UserId'], $sStorage, [$aUserContacts[0]]);
+				$oContactsDecorator->DeleteContacts($aArgs['UserId'], $sStorage, $aUserContacts);
 			}
 		}
 	}
