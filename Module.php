@@ -7,6 +7,8 @@
 
 namespace Aurora\Modules\TeamContacts;
 
+use \Aurora\Modules\Contacts\Enums\StorageType;
+
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @license https://afterlogic.com/products/common-licensing Afterlogic Software License
@@ -33,7 +35,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	
 	public function onGetStorages(&$aStorages)
 	{
-		$aStorages[] = 'team';
+		$aStorages[] = StorageType::Team;
 	}
 	
 	private function createContactForUser($iUserId, $sEmail)
@@ -42,18 +44,15 @@ class Module extends \Aurora\System\Module\AbstractModule
 		if (0 < $iUserId)
 		{
 			$aContact = array(
-				'Storage' => 'team',
+				'Storage' => StorageType::Team,
 				'PrimaryEmail' => \Aurora\Modules\Contacts\Enums\PrimaryEmail::Business,
 				'BusinessEmail' => $sEmail
 			);
-			$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
-			if ($oContactsDecorator)
-			{
-				$aCurrentUserSession = \Aurora\Api::GetUserSession();
-				\Aurora\Api::GrantAdminPrivileges();
-				$mResult =  $oContactsDecorator->CreateContact($aContact, $iUserId);
-				\Aurora\Api::SetUserSession($aCurrentUserSession);
-			}
+
+			$aCurrentUserSession = \Aurora\Api::GetUserSession();
+			\Aurora\Api::GrantAdminPrivileges();
+			$mResult =  \Aurora\Modules\Contacts\Module::Decorator()->CreateContact($aContact, $iUserId);
+			\Aurora\Api::SetUserSession($aCurrentUserSession);
 		}
 		return $mResult;
 	}
@@ -67,7 +66,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	
 	public function onBeforeDeleteUser(&$aArgs, &$mResult)
 	{
-		$sStorage = 'team';
+		$sStorage = StorageType::Team;
 		$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
 		if ($oContactsDecorator)
 		{
@@ -88,7 +87,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	
 	public function prepareFiltersFromStorage(&$aArgs, &$mResult)
 	{
-		if (isset($aArgs['Storage']) && ($aArgs['Storage'] === 'team' || $aArgs['Storage'] === 'all'))
+		if (isset($aArgs['Storage']) && ($aArgs['Storage'] === StorageType::Team || $aArgs['Storage'] === StorageType::All))
 		{
 			if (!isset($aArgs['Filters']) || !is_array($aArgs['Filters']))
 			{
@@ -98,7 +97,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 			
 			$aArgs['Filters'][]['$AND'] = [
 				'IdTenant' => [$oUser->IdTenant, '='],
-				'Storage' => ['team', '='],
+				'Storage' => [StorageType::Team, '='],
 			];
 		}
 	}
@@ -109,7 +108,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		{
 			foreach ($mResult['List'] as $iIndex => $aContact)
 			{
-				if ($aContact['Storage'] === 'team')
+				if ($aContact['Storage'] === StorageType::Team)
 				{
 					$iUserId = \Aurora\System\Api::getAuthenticatedUserId();
 					if ($aContact['IdUser'] === $iUserId)
@@ -131,7 +130,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		if ($mResult)
 		{
 			$iUserId = \Aurora\System\Api::getAuthenticatedUserId();
-			if ($mResult->Storage === 'team')
+			if ($mResult->Storage === StorageType::Team)
 			{
 				if ($mResult->IdUser === $iUserId)
 				{
@@ -162,7 +161,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 					{
 						$aFilters = [
 							'IdUser' => [$aUser['Id'], '='],
-							'Storage' => ['team', '='],
+							'Storage' => [StorageType::Team, '='],
 						];
 
 						$aContacts = $oApiContactsManager->getContacts(\Aurora\Modules\Contacts\Enums\SortField::Name, \Aurora\System\Enums\SortOrder::ASC, 0, 0, $aFilters);
@@ -182,7 +181,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$oUser = $aArgs['User'];
 		$oContact = isset($aArgs['Contact']) ? $aArgs['Contact'] : null;
 
-		if ($oContact instanceof \Aurora\Modules\Contacts\Classes\Contact && $oContact->Storage === 'team')
+		if ($oContact instanceof \Aurora\Modules\Contacts\Classes\Contact && $oContact->Storage === StorageType::Team)
 		{
 			if ($oUser->Role !== \Aurora\System\Enums\UserRole::SuperAdmin && $oUser->IdTenant !== $oContact->IdTenant)
 			{
