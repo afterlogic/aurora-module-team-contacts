@@ -18,6 +18,8 @@ use \Aurora\Modules\Contacts\Enums\StorageType;
  */
 class Module extends \Aurora\System\Module\AbstractModule
 {
+	protected static $iStorageOrder = 20;
+
 	public function init() 
 	{
 		$this->subscribeEvent('Contacts::GetStorages', array($this, 'onGetStorages'));
@@ -35,7 +37,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	
 	public function onGetStorages(&$aStorages)
 	{
-		$aStorages[] = StorageType::Team;
+		$aStorages[self::$iStorageOrder] = StorageType::Team;
 	}
 	
 	private function createContactForUser($iUserId, $sEmail)
