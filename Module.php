@@ -96,11 +96,23 @@ class Module extends \Aurora\System\Module\AbstractModule
 				$aArgs['Filters'] = array();
 			}
 			$oUser = \Aurora\System\Api::getAuthenticatedUser();
-			
-			$aArgs['Filters'][]['$AND'] = [
-				'IdTenant' => [$oUser->IdTenant, '='],
-				'Storage' => [StorageType::Team, '='],
-			];
+
+			if (isset($aArgs['SortField']) && $aArgs['SortField'] === \Aurora\Modules\Contacts\Enums\SortField::Frequency)
+			{
+				$aArgs['Filters'][]['$AND'] = [
+					'IdTenant' => [$oUser->IdTenant, '='],
+					'Storage' => [StorageType::Team, '='],
+					'Frequency' => [-1, '!='],
+					'DateModified' => ['NULL', 'IS NOT']
+				];
+			}
+			else
+			{
+				$aArgs['Filters'][]['$AND'] = [
+					'IdTenant' => [$oUser->IdTenant, '='],
+					'Storage' => [StorageType::Team, '='],
+				];
+			}
 		}
 	}
 	
