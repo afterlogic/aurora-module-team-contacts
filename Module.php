@@ -25,10 +25,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$this->subscribeEvent('Contacts::GetStorages', array($this, 'onGetStorages'));
 		$this->subscribeEvent('Core::CreateUser::after', array($this, 'onAfterCreateUser'));
 		$this->subscribeEvent('Core::DeleteUser::before', array($this, 'onBeforeDeleteUser'));
-		$this->subscribeEvent('Contacts::GetContacts::before', array($this, 'prepareFiltersFromStorage'));
-		$this->subscribeEvent('Contacts::GetContactsInfo::before', array($this, 'prepareFiltersFromStorage'));
-		$this->subscribeEvent('Contacts::Export::before', array($this, 'prepareFiltersFromStorage'));
-		$this->subscribeEvent('Contacts::GetContactsByEmails::before', array($this, 'prepareFiltersFromStorage'));
+		$this->subscribeEvent('Contacts::PrepareFiltersFromStorage', array($this, 'prepareFiltersFromStorage'));
 		$this->subscribeEvent('Contacts::GetContacts::after', array($this, 'onAfterGetContacts'));
 		$this->subscribeEvent('Contacts::GetContact::after', array($this, 'onAfterGetContact'));
 		$this->subscribeEvent('Core::DoServerInitializations::after', array($this, 'onAfterDoServerInitializations'));
@@ -91,15 +88,15 @@ class Module extends \Aurora\System\Module\AbstractModule
 	{
 		if (isset($aArgs['Storage']) && ($aArgs['Storage'] === StorageType::Team || $aArgs['Storage'] === StorageType::All))
 		{
-			if (!isset($aArgs['Filters']) || !is_array($aArgs['Filters']))
+			if (!isset($mResult) || !is_array($mResult))
 			{
-				$aArgs['Filters'] = array();
+				$mResult = array();
 			}
 			$oUser = \Aurora\System\Api::getAuthenticatedUser();
 
 			if (isset($aArgs['SortField']) && $aArgs['SortField'] === \Aurora\Modules\Contacts\Enums\SortField::Frequency)
 			{
-				$aArgs['Filters'][]['$AND'] = [
+				$mResult[]['$AND'] = [
 					'IdTenant' => [$oUser->IdTenant, '='],
 					'Storage' => [StorageType::Team, '='],
 					'Frequency' => [-1, '!='],
@@ -108,7 +105,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 			}
 			else
 			{
-				$aArgs['Filters'][]['$AND'] = [
+				$mResult[]['$AND'] = [
 					'IdTenant' => [$oUser->IdTenant, '='],
 					'Storage' => [StorageType::Team, '='],
 				];
