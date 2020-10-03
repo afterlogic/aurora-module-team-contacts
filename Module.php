@@ -30,6 +30,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$this->subscribeEvent('Contacts::GetContact::after', array($this, 'onAfterGetContact'));
 		$this->subscribeEvent('Core::DoServerInitializations::after', array($this, 'onAfterDoServerInitializations'));
 		$this->subscribeEvent('Contacts::CheckAccessToObject::after', array($this, 'onAfterCheckAccessToObject'));
+		$this->subscribeEvent('Contacts::GetContactSuggestions', array($this, 'onGetContactSuggestions'));
 	}
 	
 	public function onGetStorages(&$aStorages)
@@ -204,4 +205,21 @@ class Module extends \Aurora\System\Module\AbstractModule
 			}
 		}
 	}
+
+	public function onGetContactSuggestions(&$aArgs, &$mResult)
+	{
+		if ($aArgs['Storage'] === 'all' || $aArgs['Storage'] === StorageType::Team)
+		{
+			$mResult[StorageType::Team] = \Aurora\Modules\Contacts\Module::Decorator()->GetContacts(
+				$aArgs['UserId'], 
+				StorageType::Team, 
+				0, 
+				$aArgs['Limit'], 
+				$aArgs['SortField'], 
+				$aArgs['SortOrder'], 
+				$aArgs['Search']
+			);
+		}
+	}
+
 }
