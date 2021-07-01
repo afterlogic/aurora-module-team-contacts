@@ -8,6 +8,7 @@
 namespace Aurora\Modules\TeamContacts;
 
 use \Aurora\Modules\Contacts\Enums\StorageType;
+use Aurora\Modules\Contacts\Models\Contact;
 
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
@@ -70,13 +71,9 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
 		if ($oContactsDecorator)
 		{
-			$oApiContactsManager = $oContactsDecorator->GetApiContactsManager();
-			$aUserContacts = $oApiContactsManager->getContactUids([
-					'$AND' => [
-						'IdUser' => [$aArgs['UserId'], '='],
-						'Storage' => [$sStorage, '=']
-					]
-				]
+			$oApiContactsManager = $oContactsDecorator->getManager();
+			$aUserContacts = $oApiContactsManager->getContactUids(
+				Contact::where([['IdUser', '=', $aArgs['UserId']], ['Storage', '=', $sStorage]])
 			);
 			if (\count($aUserContacts) !== 0)
 			{
@@ -89,28 +86,22 @@ class Module extends \Aurora\System\Module\AbstractModule
 	{
 		if (isset($aArgs['Storage']) && ($aArgs['Storage'] === StorageType::Team || $aArgs['Storage'] === StorageType::All))
 		{
-			if (!isset($mResult) || !is_array($mResult))
+			if (!isset($mResult))
 			{
-				$mResult = array();
+				$mResult = \Aurora\Modules\Contacts\Models\Contact::query();
 			}
+
 			$oUser = \Aurora\System\Api::getAuthenticatedUser();
 
-			if (isset($aArgs['SortField']) && $aArgs['SortField'] === \Aurora\Modules\Contacts\Enums\SortField::Frequency)
-			{
-				$mResult[]['$AND'] = [
-					'IdTenant' => [$oUser->IdTenant, '='],
-					'Storage' => [StorageType::Team, '='],
-					'Frequency' => [-1, '!='],
-					'DateModified' => ['NULL', 'IS NOT']
-				];
-			}
-			else
-			{
-				$mResult[]['$AND'] = [
-					'IdTenant' => [$oUser->IdTenant, '='],
-					'Storage' => [StorageType::Team, '='],
-				];
-			}
+			$mResult = $mResult->orWhere(function($query) use ($oUser) {
+				$query = $query->where('IdTenant', $oUser->IdTenant)
+					->where('Storage', StorageType::Team);
+				if (isset($aArgs['SortField']) && $aArgs['SortField'] === \Aurora\Modules\Contacts\Enums\SortField::Frequency)
+				{
+					$query->where('Frequency', '!=', -1)
+						->whereNotNull('DateModified');
+				}
+		    });
 		}
 	}
 
@@ -159,9 +150,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	public function onAfterDoServerInitializations($aArgs, &$mResult)
 	{
 		$oUser = \Aurora\System\Api::getAuthenticatedUser();
-		$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
-		$oApiContactsManager = $oContactsDecorator ? $oContactsDecorator->GetApiContactsManager() : null;
-		if ($oApiContactsManager && $oUser && ($oUser->Role === \Aurora\System\Enums\UserRole::SuperAdmin || $oUser->Role === \Aurora\System\Enums\UserRole::TenantAdmin))
+		if ($oUser && ($oUser->Role === \Aurora\System\Enums\UserRole::SuperAdmin || $oUser->Role === \Aurora\System\Enums\UserRole::TenantAdmin))
 		{
 			$iTenantId = isset($aArgs['TenantId']) ? $aArgs['TenantId'] : 0;
 			$aUsers = \Aurora\Modules\Core\Module::Decorator()->GetUsers($iTenantId);
@@ -173,18 +162,14 @@ class Module extends \Aurora\System\Module\AbstractModule
 					}}, $aUsers['Items']
 				);
 
-				$aContacts = (new \Aurora\System\EAV\Query(\Aurora\Modules\Contacts\Classes\Contact::class))
-					->select(['IdUser'])
-					->where([
-						'IdUser' => [$aUserIds, 'IN'],
-						'Storage' => [StorageType::Team, '='],
-					])
-					->asArray()
-					->exec();
+				$aContactsIdUsers = Contact::select('IdUser')
+					->where('Storage', StorageType::Team)
+					->whereIn('IdUser', $aUserIds)
+					->get()
+					->map(function ($oUser) {
+						return $oUser->IdUser;
+					})->toArray();
 
-				$aContactsIdUsers = array_map(function ($aContact) {
-					return $aContact['IdUser'];
-				}, $aContacts);
 				$aDiffIds = array_diff($aUserIds, $aContactsIdUsers);
 				if (is_array($aDiffIds) && count($aDiffIds) > 0)
 				{
