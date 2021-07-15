@@ -154,7 +154,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		{
 			$iTenantId = isset($aArgs['TenantId']) ? $aArgs['TenantId'] : 0;
 			$aUsers = \Aurora\Modules\Core\Module::Decorator()->GetUsers($iTenantId);
-			if (is_array($aUsers) && is_array($aUsers['Items']))
+			if (is_array($aUsers) && is_array($aUsers['Items']) && count($aUsers['Items']) > 0)
 			{
 				$aUserIds = array_map(function ($aUser) {
 					if (is_array($aUser) && isset($aUser['Id'])) {
