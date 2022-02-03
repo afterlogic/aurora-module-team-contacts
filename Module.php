@@ -67,19 +67,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 
 	public function onBeforeDeleteUser(&$aArgs, &$mResult)
 	{
-		$sStorage = StorageType::Team;
-		$oContactsDecorator = \Aurora\Modules\Contacts\Module::Decorator();
-		if ($oContactsDecorator)
-		{
-			$oApiContactsManager = $oContactsDecorator->getManager();
-			$aUserContacts = $oApiContactsManager->getContactUids(
-				Contact::where([['IdUser', '=', $aArgs['UserId']], ['Storage', '=', $sStorage]])
-			);
-			if (\count($aUserContacts) !== 0)
-			{
-				$oContactsDecorator->DeleteContacts($aArgs['UserId'], $sStorage, $aUserContacts);
-			}
-		}
+		Contact::where([['IdUser', '=', $aArgs['UserId']], ['Storage', '=', StorageType::Team]])->delete();
 	}
 
 	public function prepareFiltersFromStorage(&$aArgs, &$mResult)
