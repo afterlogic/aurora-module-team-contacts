@@ -74,6 +74,8 @@ class Module extends \Aurora\System\Module\AbstractModule
 	{
 		if (isset($aArgs['Storage']) && ($aArgs['Storage'] === StorageType::Team || $aArgs['Storage'] === StorageType::All))
 		{
+			$aArgs['IsValid'] = true;
+
 			if (!isset($mResult))
 			{
 				$mResult = \Aurora\Modules\Contacts\Models\Contact::query();
