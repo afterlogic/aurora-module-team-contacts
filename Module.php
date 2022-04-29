@@ -7,6 +7,8 @@
 
 namespace Aurora\Modules\TeamContacts;
 
+use Aurora\Modules\Contacts\Enums\PrimaryEmail;
+use Aurora\Modules\Contacts\Enums\SortField;
 use \Aurora\Modules\Contacts\Enums\StorageType;
 use Aurora\Modules\Contacts\Models\Contact;
 
@@ -46,7 +48,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		{
 			$aContact = array(
 				'Storage' => StorageType::Team,
-				'PrimaryEmail' => \Aurora\Modules\Contacts\Enums\PrimaryEmail::Business,
+				'PrimaryEmail' => PrimaryEmail::Business,
 				'BusinessEmail' => $sEmail
 			);
 
@@ -86,10 +88,10 @@ class Module extends \Aurora\System\Module\AbstractModule
 			$mResult = $mResult->orWhere(function($query) use ($oUser) {
 				$query = $query->where('IdTenant', $oUser->IdTenant)
 					->where('Storage', StorageType::Team);
-				if (isset($aArgs['SortField']) && $aArgs['SortField'] === \Aurora\Modules\Contacts\Enums\SortField::Frequency)
+				if (isset($aArgs['SortField']) && $aArgs['SortField'] === SortField::Frequency)
 				{
-					$query->where('Frequency', '!=', -1)
-						->whereNotNull('DateModified');
+					// $query->where('Frequency', '!=', -1)
+					$query->whereNotNull('DateModified');
 				}
 		    });
 		}
