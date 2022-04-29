@@ -11,6 +11,8 @@ use Aurora\Modules\Contacts\Enums\PrimaryEmail;
 use Aurora\Modules\Contacts\Enums\SortField;
 use \Aurora\Modules\Contacts\Enums\StorageType;
 use Aurora\Modules\Contacts\Models\Contact;
+use Aurora\Modules\Contacts\Module as ContactsModule;
+use Aurora\System\Enums\UserRole;
 
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
@@ -124,10 +126,12 @@ class Module extends \Aurora\System\Module\AbstractModule
 	{
 		if ($mResult)
 		{
-			$iUserId = \Aurora\System\Api::getAuthenticatedUserId();
-			if ($mResult->Storage === StorageType::Team)
+			$oUser = \Aurora\System\Api::getAuthenticatedUser();
+			if ($oUser && $mResult->Storage === StorageType::Team)
 			{
-				if ($mResult->IdUser === $iUserId)
+				if ($mResult->IdUser === $oUser->Id || 
+					(ContactsModule::getInstance()->getConfig('AllowEditTeamContactsByTenantAdmins', false) && 
+						$oUser->Role === UserRole::TenantAdmin && $mResult->IdTenant === $oUser->IdTenant))
 				{
 					$mResult->ExtendedInformation['ItsMe'] = true;
 				}
