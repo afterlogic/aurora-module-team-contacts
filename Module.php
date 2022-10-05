@@ -124,21 +124,15 @@ class Module extends \Aurora\System\Module\AbstractModule
 
 	public function onAfterGetContact($aArgs, &$mResult)
 	{
-		if ($mResult)
-		{
-			$oUser = \Aurora\System\Api::getAuthenticatedUser();
-			if ($oUser && $mResult->Storage === StorageType::Team)
-			{
-				if ($mResult->IdUser === $oUser->Id || 
-					(ContactsModule::getInstance()->getConfig('AllowEditTeamContactsByTenantAdmins', false) && 
-						$oUser->Role === UserRole::TenantAdmin && $mResult->IdTenant === $oUser->IdTenant))
-				{
-					$mResult->ExtendedInformation['ItsMe'] = true;
-				}
-				else
-				{
-					$mResult->ExtendedInformation['ReadOnly'] = true;
-				}
+		$authenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
+		if ($mResult && $authenticatedUser && $mResult->Storage === StorageType::Team) {
+			$allowEditTeamContactsByTenantAdmins = ContactsModule::getInstance()->getConfig('AllowEditTeamContactsByTenantAdmins', false);
+			$isUserTenantAdmin = $authenticatedUser->Role === UserRole::TenantAdmin;
+			$isContactInTenant = $mResult->IdTenant === $authenticatedUser->IdTenant;
+			if ($mResult->IdUser === $authenticatedUser->Id) {
+				$mResult->ExtendedInformation['ItsMe'] = true;
+			} else if (!($allowEditTeamContactsByTenantAdmins && $isUserTenantAdmin && $isContactInTenant)) {
+				$mResult->ExtendedInformation['ReadOnly'] = true;
 			}
 		}
 	}
