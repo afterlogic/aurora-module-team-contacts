@@ -29,7 +29,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	{
 		$this->subscribeEvent('Contacts::GetStorages', array($this, 'onGetStorages'));
 		$this->subscribeEvent('Core::CreateUser::after', array($this, 'onAfterCreateUser'));
-//		$this->subscribeEvent('Core::DeleteUser::before', array($this, 'onBeforeDeleteUser'));
+		$this->subscribeEvent('Core::DeleteUser::after', array($this, 'onAfterDeleteUser'));
 		$this->subscribeEvent('Contacts::PrepareFiltersFromStorage', array($this, 'prepareFiltersFromStorage'));
 		$this->subscribeEvent('Contacts::GetContacts::after', array($this, 'onAfterGetContacts'));
 		$this->subscribeEvent('Contacts::GetContact::after', array($this, 'onAfterGetContact'));
@@ -69,9 +69,11 @@ class Module extends \Aurora\System\Module\AbstractModule
 		return $this->createContactForUser($iUserId, $aArgs['PublicId']);
 	}
 
-	public function onBeforeDeleteUser(&$aArgs, &$mResult)
+	public function onAfterDeleteUser(&$aArgs, &$mResult)
 	{
-		Contact::where([['IdUser', '=', $aArgs['UserId']], ['Storage', '=', StorageType::Team]])->delete();
+		if ($mResult) {
+			Contact::where([['IdUser', '=', $aArgs['UserId']], ['Storage', '=', StorageType::Team]])->delete();
+		}
 	}
 
 	public function prepareFiltersFromStorage(&$aArgs, &$mResult)
