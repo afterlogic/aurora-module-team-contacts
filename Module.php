@@ -25,6 +25,15 @@ class Module extends \Aurora\System\Module\AbstractModule
 {
 	protected static $iStorageOrder = 20;
 
+	/**
+	 *
+	 * @return Module
+	 */
+	public static function getInstance()
+	{
+		return \Aurora\System\Api::GetModule(self::GetName());
+	}
+
 	public function init()
 	{
 		$this->subscribeEvent('Contacts::GetStorages', array($this, 'onGetStorages'));
