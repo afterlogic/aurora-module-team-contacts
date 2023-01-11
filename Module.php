@@ -98,7 +98,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 
 			$oUser = \Aurora\System\Api::getAuthenticatedUser();
 
-			$mResult = $mResult->orWhere(function($query) use ($oUser) {
+			$mResult = $mResult->orWhere(function($query) use ($oUser, $aArgs) {
 				$query = $query->where('IdTenant', $oUser->IdTenant)
 					->where('Storage', StorageType::Team);
 				if (isset($aArgs['SortField']) && $aArgs['SortField'] === SortField::Frequency)
