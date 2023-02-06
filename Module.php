@@ -138,19 +138,22 @@ class Module extends \Aurora\System\Module\AbstractModule
         }
     }
 
+    /**
+     * Creates team contacts if they are missing within current tenant.
+     */
     public function onAfterDoServerInitializations($aArgs, &$mResult)
     {
         $oUser = \Aurora\System\Api::getAuthenticatedUser();
-        if ($oUser && ($oUser->Role === \Aurora\System\Enums\UserRole::SuperAdmin || $oUser->Role === \Aurora\System\Enums\UserRole::TenantAdmin)) {
-            $iTenantId = isset($aArgs['TenantId']) ? $aArgs['TenantId'] : 0;
-            $aUsers = \Aurora\Modules\Core\Module::Decorator()->GetUsers($iTenantId);
+        if ($oUser && $oUser->Role === \Aurora\System\Enums\UserRole::TenantAdmin) {
+            $aUsers = \Aurora\Modules\Core\Module::Decorator()->GetUsers($oUser->IdTenant);
+
             if (is_array($aUsers) && is_array($aUsers['Items']) && count($aUsers['Items']) > 0) {
                 $aUserIds = array_map(
                     function ($aUser) {
-                    if (is_array($aUser) && isset($aUser['Id'])) {
-                        return $aUser['Id'];
-                    }
-                },
+                        if (is_array($aUser) && isset($aUser['Id'])) {
+                            return $aUser['Id'];
+                        }
+                    },
                     $aUsers['Items']
                 );
 
