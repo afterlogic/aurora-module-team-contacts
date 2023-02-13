@@ -98,10 +98,9 @@ class Module extends \Aurora\System\Module\AbstractModule
             $mResult = $mResult->orWhere(function ($query) use ($oUser, $aArgs) {
                 $query = $query->where('IdTenant', $oUser->IdTenant)
                     ->where('Storage', StorageType::Team);
-                if (isset($aArgs['SortField']) && $aArgs['SortField'] === SortField::Frequency) {
-                    // $query->where('Frequency', '!=', -1)
-                    $query->whereNotNull('DateModified');
-                }
+                // if (isset($aArgs['SortField']) && $aArgs['SortField'] === SortField::Frequency) {
+                //     $query->whereNotNull('DateModified');
+                // }
             });
         }
     }
