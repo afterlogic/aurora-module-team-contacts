@@ -7,6 +7,7 @@
 
 namespace Aurora\Modules\TeamContacts;
 
+use Aurora\Api;
 use Aurora\Modules\Contacts\Enums\PrimaryEmail;
 use Aurora\Modules\Contacts\Enums\SortField;
 use Aurora\Modules\Contacts\Enums\StorageType;
@@ -95,7 +96,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 
             $oUser = \Aurora\System\Api::getAuthenticatedUser();
 
-            $mResult = $mResult->orWhere(function ($query) use ($oUser, $aArgs) {
+            $mResult = $mResult->orWhere(function ($query) use ($oUser) {
                 $query = $query->where('IdTenant', $oUser->IdTenant)
                     ->where('Storage', StorageType::Team);
                 // if (isset($aArgs['SortField']) && $aArgs['SortField'] === SortField::Frequency) {
@@ -156,10 +157,9 @@ class Module extends \Aurora\System\Module\AbstractModule
                     $aUsers['Items']
                 );
 
-                $aContactsIdUsers = Contact::select('IdUser')
+                $aContactsIdUsers = Contact::whereIn('IdUser', $aUserIds)
                     ->where('Storage', StorageType::Team)
-                    ->whereIn('IdUser', $aUserIds)
-                    ->get()
+                    ->get('IdUser')
                     ->map(function ($oUser) {
                         return $oUser->IdUser;
                     })->toArray();
@@ -167,11 +167,13 @@ class Module extends \Aurora\System\Module\AbstractModule
                 $aDiffIds = array_diff($aUserIds, $aContactsIdUsers);
                 if (is_array($aDiffIds) && count($aDiffIds) > 0) {
                     foreach ($aDiffIds as $iId) {
-                        $aUsersFilter = array_filter($aUsers, function ($aUser) use ($iId) {
-                            return ($aUser['Id'] === $iId);
+                        $aUsersFilter = array_filter($aUsers['Items'], function ($aUser) use ($iId) {
+                            return $aUser['Id'] === $iId;
                         });
                         if (is_array($aUsersFilter) && count($aUsersFilter) > 0) {
-                            $this->createContactForUser($iId, $aUsersFilter[0]['PublicId']);
+                            foreach ($aUsersFilter as $oUser) {
+                                $this->createContactForUser($iId, $oUser['PublicId']);
+                            }
                         }
                     }
                 }
