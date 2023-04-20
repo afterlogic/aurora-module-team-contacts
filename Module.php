@@ -28,15 +28,6 @@ class Module extends \Aurora\System\Module\AbstractModule
 {
     protected static $iStorageOrder = 20;
 
-    /**
-     *
-     * @return Module
-     */
-    public static function getInstance()
-    {
-        return \Aurora\System\Api::GetModule(self::GetName());
-    }
-
     public function init()
     {
         $this->subscribeEvent('Contacts::GetStorages', array($this, 'onGetStorages'));
@@ -51,7 +42,14 @@ class Module extends \Aurora\System\Module\AbstractModule
     }
 
     /**
-     *
+     * @return Module
+     */
+    public static function getInstance()
+    {
+        return parent::getInstance();
+    }
+
+    /**
      * @return Module
      */
     public static function Decorator()
@@ -60,7 +58,6 @@ class Module extends \Aurora\System\Module\AbstractModule
     }
 
     /**
-     *
      * @return Settings
      */
     public function getModuleSettings()
@@ -147,7 +144,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $authenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
         if ($mResult && $authenticatedUser && $mResult->Storage === StorageType::Team) {
-            $allowEditTeamContactsByTenantAdmins = ContactsModule::getInstance()->getConfig('AllowEditTeamContactsByTenantAdmins', false);
+            $allowEditTeamContactsByTenantAdmins = ContactsModule::getInstance()->oModuleSettings->AllowEditTeamContactsByTenantAdmins;
             $isUserTenantAdmin = $authenticatedUser->Role === UserRole::TenantAdmin;
             $isContactInTenant = $mResult->IdTenant === $authenticatedUser->IdTenant;
             if ($mResult->IdUser === $authenticatedUser->Id) {
