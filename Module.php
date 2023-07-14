@@ -32,7 +32,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $this->subscribeEvent('Contacts::GetStorages', array($this, 'onGetStorages'));
         $this->subscribeEvent('Core::CreateUser::after', array($this, 'onAfterCreateUser'));
-        $this->subscribeEvent('Core::DeleteUser::after', array($this, 'onAfterDeleteUser'));
+//        $this->subscribeEvent('Core::DeleteUser::after', array($this, 'onAfterDeleteUser'));
         $this->subscribeEvent('Contacts::PrepareFiltersFromStorage', array($this, 'prepareFiltersFromStorage'));
         $this->subscribeEvent('Contacts::GetContacts::after', array($this, 'onAfterGetContacts'));
         $this->subscribeEvent('Contacts::GetContact::after', array($this, 'onAfterGetContact'));
