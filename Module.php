@@ -7,13 +7,13 @@
 
 namespace Aurora\Modules\TeamContacts;
 
+use Afterlogic\DAV\Backend;
 use Aurora\Api;
-use Aurora\Modules\Contacts\Enums\PrimaryEmail;
-use Aurora\Modules\Contacts\Enums\SortField;
 use Aurora\Modules\Contacts\Enums\StorageType;
-use Aurora\Modules\Contacts\Models\Contact;
 use Aurora\Modules\Contacts\Module as ContactsModule;
 use Aurora\System\Enums\UserRole;
+use Sabre\VObject\UUIDUtil;
+use Illuminate\Database\Capsule\Manager as Capsule;
 
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
@@ -38,6 +38,9 @@ class Module extends \Aurora\System\Module\AbstractModule
         $this->subscribeEvent('Core::DoServerInitializations::after', array($this, 'onAfterDoServerInitializations'));
         $this->subscribeEvent('Contacts::CheckAccessToObject::after', array($this, 'onAfterCheckAccessToObject'));
         $this->subscribeEvent('Contacts::GetContactSuggestions', array($this, 'onGetContactSuggestions'));
+
+        $this->subscribeEvent('Contacts::CreateContact::before', array($this, 'populateStorage'));
+        $this->subscribeEvent('Contacts::ContactQueryBuilder', array($this, 'onContactQueryBuilder'));
     }
 
     /**
@@ -69,20 +72,43 @@ class Module extends \Aurora\System\Module\AbstractModule
         $aStorages[self::$iStorageOrder] = StorageType::Team;
     }
 
+    protected function getTeamAddressbook($iUserId)
+    {
+        $addressbook = false;
+
+        $oUser = Api::getUserById($iUserId);
+        if ($oUser) {
+            $sPrincipalUri = \Afterlogic\DAV\Constants::PRINCIPALS_PREFIX . $oUser->IdTenant . '_' . \Afterlogic\DAV\Constants::DAV_TENANT_PRINCIPAL;
+            $addressbook = Backend::Carddav()->getAddressBookForUser($sPrincipalUri, 'gab');
+            if (!$addressbook) {
+                if (Backend::Carddav()->createAddressBook($sPrincipalUri, 'gab', ['{DAV:}displayname' => \Afterlogic\DAV\Constants::GLOBAL_CONTACTS])) {
+                    $addressbook = Backend::Carddav()->getAddressBookForUser($sPrincipalUri, 'gab');
+                }
+            }
+        }
+
+        return $addressbook;
+    }
+
     private function createContactForUser($iUserId, $sEmail)
     {
         $mResult = false;
         if (0 < $iUserId) {
-            $aContact = array(
-                'Storage' => StorageType::Team,
-                'PrimaryEmail' => PrimaryEmail::Business,
-                'BusinessEmail' => $sEmail
-            );
+            $addressbook = $this->getTeamAddressbook($iUserId);
+            if ($addressbook) {
+                $uid = UUIDUtil::getUUID();
+                $vcard = new \Sabre\VObject\Component\VCard(['UID' => $uid]);
+                $vcard->add(
+                    'EMAIL',
+                    $sEmail,
+                    [
+                        'type' => ['work'],
+                        'pref' => 1,
+                    ]
+                );
 
-            $aCurrentUserSession = \Aurora\Api::GetUserSession();
-            \Aurora\Api::GrantAdminPrivileges();
-            $mResult =  \Aurora\Modules\Contacts\Module::Decorator()->CreateContact($aContact, $iUserId);
-            \Aurora\Api::SetUserSession($aCurrentUserSession);
+                $mResult = !!Backend::Carddav()->createCard($addressbook['id'], $uid . '.vcf', $vcard->serialize());
+            }
         }
         return $mResult;
     }
@@ -99,34 +125,31 @@ class Module extends \Aurora\System\Module\AbstractModule
         if (isset($aArgs['Storage']) && ($aArgs['Storage'] === StorageType::Team || $aArgs['Storage'] === StorageType::All)) {
             $aArgs['IsValid'] = true;
 
-            if (!isset($mResult)) {
-                $mResult = \Aurora\Modules\Contacts\Models\Contact::query();
-            }
-
             $oUser = \Aurora\System\Api::getAuthenticatedUser();
 
-            $mResult = $mResult->orWhere(function ($query) use ($oUser) {
-                $query = $query->where('IdTenant', $oUser->IdTenant)
-                    ->where('Storage', StorageType::Team);
-                // if (isset($aArgs['SortField']) && $aArgs['SortField'] === SortField::Frequency) {
-                //     $query->whereNotNull('DateModified');
-                // }
-            });
+            $addressbook = $this->getTeamAddressbook($oUser->Id);
+
+            if ($addressbook) {
+                $mResult = $mResult->orWhere('adav_cards.addressbookid', $addressbook['id']);
+            }
         }
     }
 
     public function onAfterGetContacts($aArgs, &$mResult)
     {
         if (\is_array($mResult) && \is_array($mResult['List'])) {
-            foreach ($mResult['List'] as $iIndex => $aContact) {
-                if ($aContact['Storage'] === StorageType::Team) {
-                    $iUserId = \Aurora\System\Api::getAuthenticatedUserId();
-                    if ($aContact['IdUser'] === $iUserId) {
-                        $aContact['ItsMe'] = true;
-                    } else {
-                        $aContact['ReadOnly'] = true;
+            $userPublicId = Api::getUserPublicIdById($aArgs['UserId']);
+            $teamAddressbook = $this->getTeamAddressbook($aArgs['UserId']);
+            if ($teamAddressbook) {
+                foreach ($mResult['List'] as $iIndex => $aContact) {
+                    if ($aContact['Storage'] == $teamAddressbook['id']) {
+                        if ($aContact['ViewEmail'] === $userPublicId) {
+                            $aContact['ItsMe'] = true;
+                        } else {
+                            $aContact['ReadOnly'] = true;
+                        }
+                        $mResult['List'][$iIndex] = $aContact;
                     }
-                    $mResult['List'][$iIndex] = $aContact;
                 }
             }
         }
@@ -135,14 +158,17 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onAfterGetContact($aArgs, &$mResult)
     {
         $authenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
-        if ($mResult && $authenticatedUser && $mResult->Storage === StorageType::Team) {
-            $allowEditTeamContactsByTenantAdmins = ContactsModule::getInstance()->oModuleSettings->AllowEditTeamContactsByTenantAdmins;
-            $isUserTenantAdmin = $authenticatedUser->Role === UserRole::TenantAdmin;
-            $isContactInTenant = $mResult->IdTenant === $authenticatedUser->IdTenant;
-            if ($mResult->IdUser === $authenticatedUser->Id) {
-                $mResult->ExtendedInformation['ItsMe'] = true;
-            } elseif (!($allowEditTeamContactsByTenantAdmins && $isUserTenantAdmin && $isContactInTenant)) {
-                $mResult->ExtendedInformation['ReadOnly'] = true;
+        $teamAddressbook = $this->getTeamAddressbook($authenticatedUser->Id);
+        if ($teamAddressbook) {
+            if ($mResult && $authenticatedUser && $mResult->Storage == $teamAddressbook['id']) {
+                $allowEditTeamContactsByTenantAdmins = ContactsModule::getInstance()->oModuleSettings->AllowEditTeamContactsByTenantAdmins;
+                $isUserTenantAdmin = $authenticatedUser->Role === UserRole::TenantAdmin;
+                $isContactInTenant = $mResult->IdTenant === $authenticatedUser->IdTenant;
+                if ($mResult->IdUser === $authenticatedUser->Id) {
+                    $mResult->ExtendedInformation['ItsMe'] = true;
+                } elseif (!($allowEditTeamContactsByTenantAdmins && $isUserTenantAdmin && $isContactInTenant)) {
+                    $mResult->ExtendedInformation['ReadOnly'] = true;
+                }
             }
         }
     }
@@ -153,38 +179,15 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onAfterDoServerInitializations($aArgs, &$mResult)
     {
         $oUser = \Aurora\System\Api::getAuthenticatedUser();
-        if ($oUser && $oUser->Role === \Aurora\System\Enums\UserRole::TenantAdmin) {
-            $aUsers = \Aurora\Modules\Core\Module::Decorator()->GetUsers($oUser->IdTenant);
-
-            if (is_array($aUsers) && is_array($aUsers['Items']) && count($aUsers['Items']) > 0) {
-                $aUserIds = array_map(
-                    function ($aUser) {
-                        if (is_array($aUser) && isset($aUser['Id'])) {
-                            return $aUser['Id'];
-                        }
-                    },
-                    $aUsers['Items']
-                );
-
-                $aContactsIdUsers = Contact::whereIn('IdUser', $aUserIds)
-                    ->where('Storage', StorageType::Team)
-                    ->get('IdUser')
-                    ->map(function ($oUser) {
-                        return $oUser->IdUser;
-                    })->toArray();
-
-                $aDiffIds = array_diff($aUserIds, $aContactsIdUsers);
-                if (is_array($aDiffIds) && count($aDiffIds) > 0) {
-                    foreach ($aDiffIds as $iId) {
-                        $aUsersFilter = array_filter($aUsers['Items'], function ($aUser) use ($iId) {
-                            return $aUser['Id'] === $iId;
-                        });
-                        if (is_array($aUsersFilter) && count($aUsersFilter) > 0) {
-                            foreach ($aUsersFilter as $oUser) {
-                                $this->createContactForUser($iId, $oUser['PublicId']);
-                            }
-                        }
-                    }
+        if ($oUser && $oUser->Role === \Aurora\System\Enums\UserRole::NormalUser) {
+            $teamAddressBook = $this->getTeamAddressbook($oUser->Id);
+            if ($teamAddressBook) {
+                $contact = Capsule::connection()->table('contacts_cards')
+                ->where('AddressBookId', $teamAddressBook['id'])
+                ->where('ViewEmail', $oUser->PublicId)
+                ->first();
+                if (!$contact) {
+                    $this->createContactForUser($oUser->Id, $oUser->PublicId);
                 }
             }
         }
@@ -217,5 +220,31 @@ class Module extends \Aurora\System\Module\AbstractModule
                 $aArgs['Search']
             );
         }
+    }
+
+    /**
+     *
+     */
+    public function populateStorage(&$aArgs, &$mResult)
+    {
+        if (isset($aArgs['Storage'], $aArgs['UserId'])) {
+            $aStorageParts = \explode('-', $aArgs['Storage']);
+            if (isset($aStorageParts[0]) && $aStorageParts[0] === StorageType::Team) {
+
+                $addressbook = $this->getTeamAddressbook($aArgs['UserId']);
+                if ($addressbook) {
+                    $aArgs['Storage'] = $addressbook['id'];
+                }
+            }
+        }
+    }
+
+    public function onContactQueryBuilder(&$aArgs, &$query)
+    {
+        $addressbook = $this->getTeamAddressbook($aArgs['UserId']);
+        $query->orWhere(function ($query) use ($addressbook, $aArgs) {
+            $query->where('adav_addressbooks.id', $addressbook['id'])
+                ->where('adav_cards.id', $aArgs['UUID']);
+        });
     }
 }
