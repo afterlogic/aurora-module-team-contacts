@@ -242,9 +242,13 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onContactQueryBuilder(&$aArgs, &$query)
     {
         $addressbook = $this->getTeamAddressbook($aArgs['UserId']);
-        $query->orWhere(function ($query) use ($addressbook, $aArgs) {
-            $query->where('adav_addressbooks.id', $addressbook['id'])
-                ->where('adav_cards.id', $aArgs['UUID']);
+        $query->orWhere(function ($q) use ($addressbook, $aArgs) {
+            $q->where('adav_addressbooks.id', $addressbook['id']);
+            if (is_array($aArgs['UUID'])) {
+                $q->whereIn('adav_cards.id', $aArgs['UUID']);
+            } else {
+                $q->where('adav_cards.id', $aArgs['UUID']);
+            }
         });
     }
 }
