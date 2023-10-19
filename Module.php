@@ -245,7 +245,9 @@ class Module extends \Aurora\System\Module\AbstractModule
         $query->orWhere(function ($q) use ($addressbook, $aArgs) {
             $q->where('adav_addressbooks.id', $addressbook['id']);
             if (is_array($aArgs['UUID'])) {
-                $q->whereIn('adav_cards.id', $aArgs['UUID']);
+                if (count($aArgs['UUID']) > 0) {
+                    $q->whereIn('adav_cards.id', $aArgs['UUID']);
+                }
             } else {
                 $q->where('adav_cards.id', $aArgs['UUID']);
             }
