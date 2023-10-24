@@ -130,6 +130,14 @@ class Module extends \Aurora\System\Module\AbstractModule
             $addressbook = $this->getTeamAddressbook($oUser->Id);
 
             if ($addressbook) {
+                if (isset($aArgs['Query'])) {
+                    $aArgs['Query']->addSelect(Capsule::connection()->raw('
+                    CASE
+                        WHEN ' . Capsule::connection()->getTablePrefix() . 'adav_cards.addressbookid = ' . $addressbook['id'] . ' THEN true
+                        ELSE false
+                    END as IsTeam
+                    '));
+                }
                 $mResult = $mResult->orWhere('adav_cards.addressbookid', $addressbook['id']);
             }
         }
