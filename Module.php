@@ -8,6 +8,7 @@
 namespace Aurora\Modules\TeamContacts;
 
 use Afterlogic\DAV\Backend;
+use Afterlogic\DAV\Constants;
 use Aurora\Api;
 use Aurora\Modules\Contacts\Enums\StorageType;
 use Aurora\Modules\Contacts\Module as ContactsModule;
@@ -30,9 +31,9 @@ class Module extends \Aurora\System\Module\AbstractModule
 
     public function init()
     {
-        $this->subscribeEvent('Contacts::GetStorages', array($this, 'onGetStorages'));
+        $this->subscribeEvent('Contacts::GetAddressBooks::after', array($this, 'onAfterGetAddressBooks'));
         $this->subscribeEvent('Core::CreateUser::after', array($this, 'onAfterCreateUser'));
-        $this->subscribeEvent('Contacts::PrepareFiltersFromStorage', array($this, 'prepareFiltersFromStorage'));
+        $this->subscribeEvent('Contacts::PrepareFiltersFromStorage', array($this, 'onPrepareFiltersFromStorage'));
         $this->subscribeEvent('Contacts::GetContacts::after', array($this, 'onAfterGetContacts'));
         $this->subscribeEvent('Contacts::GetContact::after', array($this, 'onAfterGetContact'));
         $this->subscribeEvent('Core::DoServerInitializations::after', array($this, 'onAfterDoServerInitializations'));
@@ -67,9 +68,27 @@ class Module extends \Aurora\System\Module\AbstractModule
         return $this->oModuleSettings;
     }
 
-    public function onGetStorages(&$aStorages)
+    public function onAfterGetAddressBooks(&$aArgs, &$mResult)
     {
-        $aStorages[self::$iStorageOrder] = StorageType::Team;
+        if (!is_array($mResult)) {
+            $mResult = [];
+        }
+
+        $addressbook = $this->getTeamAddressbook($aArgs['UserId']);
+        if ($addressbook) {
+            /**
+             * @var array $addressbook
+             */
+            $mResult[] = [
+                'Id' => 'team',
+                'EntityId' => $addressbook['id'],
+                'CTag' => $addressbook['{http://sabredav.org/ns}sync-token'],
+                'Display' => true,
+                'Order' => 1,
+                'DisplayName' => $addressbook['{DAV:}displayname'],
+                'Uri' => $addressbook['uri']
+            ];
+        }
     }
 
     protected function getTeamAddressbook($iUserId)
@@ -120,7 +139,7 @@ class Module extends \Aurora\System\Module\AbstractModule
         return $this->createContactForUser($iUserId, $aArgs['PublicId']);
     }
 
-    public function prepareFiltersFromStorage(&$aArgs, &$mResult)
+    public function onPrepareFiltersFromStorage(&$aArgs, &$mResult)
     {
         if (isset($aArgs['Storage']) && ($aArgs['Storage'] === StorageType::Team || $aArgs['Storage'] === StorageType::All)) {
             $aArgs['IsValid'] = true;
