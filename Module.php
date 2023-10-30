@@ -29,6 +29,10 @@ class Module extends \Aurora\System\Module\AbstractModule
 {
     protected static $iStorageOrder = 20;
 
+    protected $userPublicIdToDelete = null;
+
+    protected $teamAddressBook = null;
+
     public function init()
     {
         $this->subscribeEvent('Contacts::GetAddressBooks::after', array($this, 'onAfterGetAddressBooks'));
@@ -42,6 +46,9 @@ class Module extends \Aurora\System\Module\AbstractModule
 
         $this->subscribeEvent('Contacts::CreateContact::before', array($this, 'populateStorage'));
         $this->subscribeEvent('Contacts::ContactQueryBuilder', array($this, 'onContactQueryBuilder'));
+
+        $this->subscribeEvent('Core::DeleteUser::before', array($this, 'onBeforeDeleteUser'));
+        $this->subscribeEvent('Core::DeleteUser::after', array($this, 'onAfterDeleteUser'));
     }
 
     /**
@@ -279,5 +286,30 @@ class Module extends \Aurora\System\Module\AbstractModule
                 $q->where('adav_cards.id', $aArgs['UUID']);
             }
         });
+    }
+
+    public function onBeforeDeleteUser(&$aArgs, &$mResult)
+    {
+        if (isset($aArgs['UserId'])) {
+            $this->userPublicIdToDelete = Api::getUserPublicIdById($aArgs['UserId']);
+            $this->teamAddressBook = $this->getTeamAddressbook($aArgs['UserId']);
+        }
+    }
+
+    public function onAfterDeleteUser($aArgs, &$mResult)
+    {
+        if ($mResult && $this->userPublicIdToDelete && $this->teamAddressBook) {
+            $card = Capsule::connection()->table('contacts_cards')
+                ->join('adav_cards', 'contacts_cards.CardId', '=', 'adav_cards.id')
+                ->join('adav_addressbooks', 'adav_cards.addressbookid', '=', 'adav_addressbooks.id')
+                ->where('adav_addressbooks.id', $this->teamAddressBook['id'])
+                ->where('ViewEmail', $this->userPublicIdToDelete)
+                ->select('adav_cards.uri as card_uri', 'adav_addressbooks.id as addressbook_id')
+                ->first();
+
+            if ($card) {
+                Backend::Carddav()->deleteCard($card->addressbook_id, $card->card_uri);
+            }
+        }
     }
 }
