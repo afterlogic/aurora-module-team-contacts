@@ -111,7 +111,7 @@ class Module extends \Aurora\System\Module\AbstractModule
             $sPrincipalUri = \Afterlogic\DAV\Constants::PRINCIPALS_PREFIX . $oUser->IdTenant . '_' . \Afterlogic\DAV\Constants::DAV_TENANT_PRINCIPAL;
             $addressbook = Backend::Carddav()->getAddressBookForUser($sPrincipalUri, 'gab');
             if (!$addressbook) {
-                if (Backend::Carddav()->createAddressBook($sPrincipalUri, 'gab', ['{DAV:}displayname' => \Afterlogic\DAV\Constants::GLOBAL_CONTACTS])) {
+                if (Backend::Carddav()->createAddressBook($sPrincipalUri, 'gab', ['{DAV:}displayname' => \Afterlogic\DAV\Constants::ADDRESSBOOK_TEAM_DISPLAY_NAME])) {
                     $addressbook = Backend::Carddav()->getAddressBookForUser($sPrincipalUri, 'gab');
                 }
             }
