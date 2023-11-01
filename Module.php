@@ -43,7 +43,9 @@ class Module extends \Aurora\System\Module\AbstractModule
         $this->subscribeEvent('Core::DoServerInitializations::after', array($this, 'onAfterDoServerInitializations'));
         $this->subscribeEvent('Contacts::CheckAccessToObject::after', array($this, 'onAfterCheckAccessToObject'));
         $this->subscribeEvent('Contacts::GetContactSuggestions', array($this, 'onGetContactSuggestions'));
+        $this->subscribeEvent('Contacts::CheckAccessToAddressBook::after', array($this, 'onAfterCheckAccessToAddressBook'));
 
+        $this->subscribeEvent('Contacts::PopulateStorage', array($this, 'populateStorage'));
         $this->subscribeEvent('Contacts::CreateContact::before', array($this, 'populateStorage'));
         $this->subscribeEvent('Contacts::ContactQueryBuilder', array($this, 'onContactQueryBuilder'));
 
@@ -81,7 +83,7 @@ class Module extends \Aurora\System\Module\AbstractModule
             $mResult = [];
         }
 
-        $addressbook = $this->getTeamAddressbook($aArgs['UserId']);
+        $addressbook = $this->GetTeamAddressbook($aArgs['UserId']);
         if ($addressbook) {
             /**
              * @var array $addressbook
@@ -98,11 +100,13 @@ class Module extends \Aurora\System\Module\AbstractModule
         }
     }
 
-    protected function getTeamAddressbook($iUserId)
+    public function GetTeamAddressbook($UserId)
     {
+        Api::CheckAccess($UserId);
+
         $addressbook = false;
 
-        $oUser = Api::getUserById($iUserId);
+        $oUser = Api::getUserById($UserId);
         if ($oUser) {
             $sPrincipalUri = \Afterlogic\DAV\Constants::PRINCIPALS_PREFIX . $oUser->IdTenant . '_' . \Afterlogic\DAV\Constants::DAV_TENANT_PRINCIPAL;
             $addressbook = Backend::Carddav()->getAddressBookForUser($sPrincipalUri, 'gab');
@@ -120,7 +124,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $mResult = false;
         if (0 < $iUserId) {
-            $addressbook = $this->getTeamAddressbook($iUserId);
+            $addressbook = $this->GetTeamAddressbook($iUserId);
             if ($addressbook) {
                 $uid = UUIDUtil::getUUID();
                 $vcard = new \Sabre\VObject\Component\VCard(['UID' => $uid]);
@@ -153,7 +157,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 
             $oUser = \Aurora\System\Api::getAuthenticatedUser();
 
-            $addressbook = $this->getTeamAddressbook($oUser->Id);
+            $addressbook = $this->GetTeamAddressbook($oUser->Id);
 
             if ($addressbook) {
                 if (isset($aArgs['Query'])) {
@@ -173,7 +177,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         if (\is_array($mResult) && \is_array($mResult['List'])) {
             $userPublicId = Api::getUserPublicIdById($aArgs['UserId']);
-            $teamAddressbook = $this->getTeamAddressbook($aArgs['UserId']);
+            $teamAddressbook = $this->GetTeamAddressbook($aArgs['UserId']);
             if ($teamAddressbook) {
                 foreach ($mResult['List'] as $iIndex => $aContact) {
                     if ($aContact['Storage'] == $teamAddressbook['id']) {
@@ -192,7 +196,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onAfterGetContact($aArgs, &$mResult)
     {
         $authenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
-        $teamAddressbook = $this->getTeamAddressbook($authenticatedUser->Id);
+        $teamAddressbook = $this->GetTeamAddressbook($authenticatedUser->Id);
         if ($teamAddressbook) {
             if ($mResult && $authenticatedUser && $mResult->Storage == $teamAddressbook['id']) {
                 $allowEditTeamContactsByTenantAdmins = ContactsModule::getInstance()->oModuleSettings->AllowEditTeamContactsByTenantAdmins;
@@ -214,7 +218,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $oUser = \Aurora\System\Api::getAuthenticatedUser();
         if ($oUser && $oUser->Role === \Aurora\System\Enums\UserRole::NormalUser) {
-            $teamAddressBook = $this->getTeamAddressbook($oUser->Id);
+            $teamAddressBook = $this->GetTeamAddressbook($oUser->Id);
             if ($teamAddressBook) {
                 $contact = Capsule::connection()->table('contacts_cards')
                 ->where('AddressBookId', $teamAddressBook['id'])
@@ -265,9 +269,10 @@ class Module extends \Aurora\System\Module\AbstractModule
             $aStorageParts = \explode('-', $aArgs['Storage']);
             if (isset($aStorageParts[0]) && $aStorageParts[0] === StorageType::Team) {
 
-                $addressbook = $this->getTeamAddressbook($aArgs['UserId']);
+                $addressbook = $this->GetTeamAddressbook($aArgs['UserId']);
                 if ($addressbook) {
-                    $aArgs['Storage'] = $addressbook['id'];
+                    $aArgs['Storage'] = StorageType::Team;
+                    $aArgs['AddressBookId'] = $addressbook['id'];
                 }
             }
         }
@@ -275,7 +280,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 
     public function onContactQueryBuilder(&$aArgs, &$query)
     {
-        $addressbook = $this->getTeamAddressbook($aArgs['UserId']);
+        $addressbook = $this->GetTeamAddressbook($aArgs['UserId']);
         $query->orWhere(function ($q) use ($addressbook, $aArgs) {
             $q->where('adav_addressbooks.id', $addressbook['id']);
             if (is_array($aArgs['UUID'])) {
@@ -292,7 +297,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         if (isset($aArgs['UserId'])) {
             $this->userPublicIdToDelete = Api::getUserPublicIdById($aArgs['UserId']);
-            $this->teamAddressBook = $this->getTeamAddressbook($aArgs['UserId']);
+            $this->teamAddressBook = $this->GetTeamAddressbook($aArgs['UserId']);
         }
     }
 
@@ -309,6 +314,18 @@ class Module extends \Aurora\System\Module\AbstractModule
 
             if ($card) {
                 Backend::Carddav()->deleteCard($card->addressbook_id, $card->card_uri);
+            }
+        }
+    }
+
+    public function onAfterCheckAccessToAddressBook(&$aArgs, &$mResult)
+    {
+        if (isset($aArgs['User'], $aArgs['AddressBookId'])) {
+            $addressbook = $this->GetTeamAddressbook($aArgs['User']->Id);
+            if ($addressbook && $addressbook['id'] == $aArgs['AddressBookId']) {
+                $mResult = true;
+
+                return $mResult;
             }
         }
     }
