@@ -202,7 +202,7 @@ class Module extends \Aurora\System\Module\AbstractModule
                 $allowEditTeamContactsByTenantAdmins = ContactsModule::getInstance()->oModuleSettings->AllowEditTeamContactsByTenantAdmins;
                 $isUserTenantAdmin = $authenticatedUser->Role === UserRole::TenantAdmin;
                 $isContactInTenant = $mResult->IdTenant === $authenticatedUser->IdTenant;
-                if ($mResult->IdUser === $authenticatedUser->Id) {
+                if ($mResult->BusinessEmail === $authenticatedUser->PublicId) {
                     $mResult->ExtendedInformation['ItsMe'] = true;
                 } elseif (!($allowEditTeamContactsByTenantAdmins && $isUserTenantAdmin && $isContactInTenant)) {
                     $mResult->ExtendedInformation['ReadOnly'] = true;
