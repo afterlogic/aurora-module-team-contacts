@@ -15,6 +15,7 @@ use Aurora\Modules\Contacts\Module as ContactsModule;
 use Aurora\System\Enums\UserRole;
 use Sabre\VObject\UUIDUtil;
 use Illuminate\Database\Capsule\Manager as Capsule;
+use Aurora\System\Exceptions\ApiException;
 
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
@@ -51,6 +52,8 @@ class Module extends \Aurora\System\Module\AbstractModule
 
         $this->subscribeEvent('Core::DeleteUser::before', array($this, 'onBeforeDeleteUser'));
         $this->subscribeEvent('Core::DeleteUser::after', array($this, 'onAfterDeleteUser'));
+
+        $this->subscribeEvent('Contacts::UpdateContactObject::before', array($this, 'onBeforeUpdateContactObject'));
     }
 
     /**
@@ -158,15 +161,14 @@ class Module extends \Aurora\System\Module\AbstractModule
             $oUser = \Aurora\System\Api::getAuthenticatedUser();
 
             $addressbook = $this->GetTeamAddressbook($oUser->Id);
-
             if ($addressbook) {
                 if (isset($aArgs['Query'])) {
-                    $aArgs['Query']->addSelect(Capsule::connection()->raw('
-                    CASE
+                    $aArgs['Query']->addSelect(Capsule::connection()->raw(
+                        'CASE
                         WHEN ' . Capsule::connection()->getTablePrefix() . 'adav_cards.addressbookid = ' . $addressbook['id'] . ' THEN true
                         ELSE false
-                    END as IsTeam
-                    '));
+                    END as IsTeam'
+                    ));
                 }
                 $mResult = $mResult->orWhere('adav_cards.addressbookid', $addressbook['id']);
             }
@@ -235,8 +237,8 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $oUser = $aArgs['User'];
         $oContact = isset($aArgs['Contact']) ? $aArgs['Contact'] : null;
-
-        if ($oContact instanceof \Aurora\Modules\Contacts\Models\Contact && $oContact->Storage === StorageType::Team) {
+        $teamAddressBook = $this->GetTeamAddressbook($oUser->Id);
+        if ($oContact instanceof \Aurora\Modules\Contacts\Classes\Contact && $oContact->AddressBookId === $teamAddressBook['id']) {
             if ($oUser->Role !== \Aurora\System\Enums\UserRole::SuperAdmin && $oUser->IdTenant !== $oContact->IdTenant) {
                 $mResult = false;
             } else {
@@ -326,6 +328,25 @@ class Module extends \Aurora\System\Module\AbstractModule
                 $mResult = true;
 
                 return $mResult;
+            }
+        }
+    }
+
+    public function onBeforeUpdateContactObject(&$aArgs, &$mResult)
+    {
+        $user = Api::getAuthenticatedUser();
+
+        if ($user && isset($aArgs['Contact'])) {
+            $addressbook = Backend::Carddav()->getAddressBookById($aArgs['Contact']->Storage);
+            if ($addressbook['uri'] === 'gab') {
+                $teamAddressbook = $this->GetTeamAddressbook($user->Id);
+                if ($user->Role === \Aurora\System\Enums\UserRole::SuperAdmin ||
+                    ($user->Role === \Aurora\System\Enums\UserRole::TenantAdmin && $teamAddressbook['id'] === (int) $aArgs['Contact']->Storage) ||
+                    (isset($aArgs['Contact']->ExtendedInformation['ItsMe']) && $aArgs['Contact']->ExtendedInformation['ItsMe'])) {
+
+                } else {
+                    throw new ApiException(\Aurora\System\Notifications::AccessDenied, null, 'AccessDenied');
+                }
             }
         }
     }
