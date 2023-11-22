@@ -337,11 +337,11 @@ class Module extends \Aurora\System\Module\AbstractModule
         $user = Api::getAuthenticatedUser();
 
         if ($user && isset($aArgs['Contact'])) {
-            $addressbook = Backend::Carddav()->getAddressBookById($aArgs['Contact']->Storage);
+            $addressbook = Backend::Carddav()->getAddressBookById($aArgs['Contact']->AddressBookId);
             if ($addressbook['uri'] === 'gab') {
                 $teamAddressbook = $this->GetTeamAddressbook($user->Id);
                 if ($user->Role === \Aurora\System\Enums\UserRole::SuperAdmin ||
-                    ($user->Role === \Aurora\System\Enums\UserRole::TenantAdmin && $teamAddressbook['id'] === (int) $aArgs['Contact']->Storage) ||
+                    ($user->Role === \Aurora\System\Enums\UserRole::TenantAdmin && $teamAddressbook['id'] === (int) $aArgs['Contact']->AddressBookId) ||
                     (isset($aArgs['Contact']->ExtendedInformation['ItsMe']) && $aArgs['Contact']->ExtendedInformation['ItsMe'])) {
 
                 } else {
