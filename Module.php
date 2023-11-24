@@ -45,6 +45,7 @@ class Module extends \Aurora\System\Module\AbstractModule
         $this->subscribeEvent('Contacts::CheckAccessToObject::after', array($this, 'onAfterCheckAccessToObject'));
         $this->subscribeEvent('Contacts::GetContactSuggestions', array($this, 'onGetContactSuggestions'));
         $this->subscribeEvent('Contacts::CheckAccessToAddressBook::after', array($this, 'onAfterCheckAccessToAddressBook'));
+        $this->subscribeEvent('Contacts::UpdateAddressBook::before', array($this, 'onBeforeUpdateAddressBook'));
 
         $this->subscribeEvent('Contacts::PopulateStorage', array($this, 'populateStorage'));
         $this->subscribeEvent('Contacts::CreateContact::before', array($this, 'populateStorage'));
@@ -348,6 +349,14 @@ class Module extends \Aurora\System\Module\AbstractModule
                     throw new ApiException(\Aurora\System\Notifications::AccessDenied, null, 'AccessDenied');
                 }
             }
+        }
+    }
+
+    public function onBeforeUpdateAddressBook(&$aArgs, &$mResult) 
+    {
+        $addressbook = Backend::Carddav()->getAddressBookById($aArgs['EntityId']);
+        if ($addressbook['uri'] === 'gab') {
+            throw new ApiException(\Aurora\System\Notifications::AccessDenied, null, 'AccessDenied');
         }
     }
 }
