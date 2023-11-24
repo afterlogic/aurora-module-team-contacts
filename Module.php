@@ -355,7 +355,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onBeforeUpdateAddressBook(&$aArgs, &$mResult) 
     {
         $addressbook = Backend::Carddav()->getAddressBookById($aArgs['EntityId']);
-        if ($addressbook['uri'] === 'gab') {
+        if ($addressbook && $addressbook['uri'] === 'gab') {
             throw new ApiException(\Aurora\System\Notifications::AccessDenied, null, 'AccessDenied');
         }
     }
