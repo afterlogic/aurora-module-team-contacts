@@ -220,7 +220,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onAfterDoServerInitializations($aArgs, &$mResult)
     {
         $oUser = \Aurora\System\Api::getAuthenticatedUser();
-        if ($oUser && $oUser->Role === \Aurora\System\Enums\UserRole::NormalUser) {
+        if ($oUser && $oUser->Role === UserRole::NormalUser) {
             $teamAddressBook = $this->GetTeamAddressbook($oUser->Id);
             if ($teamAddressBook) {
                 $contact = Capsule::connection()->table('contacts_cards')
@@ -240,7 +240,7 @@ class Module extends \Aurora\System\Module\AbstractModule
         $oContact = isset($aArgs['Contact']) ? $aArgs['Contact'] : null;
         $teamAddressBook = $this->GetTeamAddressbook($oUser->Id);
         if ($oContact instanceof \Aurora\Modules\Contacts\Classes\Contact && $oContact->AddressBookId === $teamAddressBook['id']) {
-            if ($oUser->Role !== \Aurora\System\Enums\UserRole::SuperAdmin && $oUser->IdTenant !== $oContact->IdTenant) {
+            if ($oUser->Role !== UserRole::SuperAdmin && $oUser->IdTenant !== $oContact->IdTenant) {
                 $mResult = false;
             } else {
                 $mResult = true;
