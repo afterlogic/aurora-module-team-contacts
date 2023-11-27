@@ -343,12 +343,12 @@ class Module extends \Aurora\System\Module\AbstractModule
                 $teamAddressbook = $this->GetTeamAddressbook($user->Id);
 
                 $isSuperAdmin = $user->Role === UserRole::SuperAdmin;
-                $isTenantAndCanEdit = $user->Role === UserRole::TenantAdmin;
+                $isTenant = $user->Role === UserRole::TenantAdmin;
                 $isCorrectTeamAddressbook = $teamAddressbook['id'] === (int) $aArgs['Contact']->AddressBookId;
                 $isItsMe = isset($aArgs['Contact']->ExtendedInformation['ItsMe']) && $aArgs['Contact']->ExtendedInformation['ItsMe'];
                 $isReadOnly = isset($aArgs['Contact']->ExtendedInformation['ReadOnly']) && $aArgs['Contact']->ExtendedInformation['ReadOnly'];
 
-                if (!($isSuperAdmin || ($isTenantAndCanEdit && !$isReadOnly && $isCorrectTeamAddressbook) || $isItsMe)) {
+                if (!($isSuperAdmin || ($isTenant && !$isReadOnly && $isCorrectTeamAddressbook) || $isItsMe)) {
                     throw new ApiException(\Aurora\System\Notifications::AccessDenied, null, 'AccessDenied');
                 }
             }
