@@ -341,18 +341,21 @@ class Module extends \Aurora\System\Module\AbstractModule
             $addressbook = Backend::Carddav()->getAddressBookById($aArgs['Contact']->AddressBookId);
             if ($addressbook['uri'] === 'gab') {
                 $teamAddressbook = $this->GetTeamAddressbook($user->Id);
-                if ($user->Role === \Aurora\System\Enums\UserRole::SuperAdmin ||
-                    ($user->Role === \Aurora\System\Enums\UserRole::TenantAdmin && $teamAddressbook['id'] === (int) $aArgs['Contact']->AddressBookId) ||
-                    (isset($aArgs['Contact']->ExtendedInformation['ItsMe']) && $aArgs['Contact']->ExtendedInformation['ItsMe'])) {
 
-                } else {
+                $isSuperAdmin = $user->Role === UserRole::SuperAdmin;
+                $isTenantAndCanEdit = $user->Role === UserRole::TenantAdmin;
+                $isCorrectTeamAddressbook = $teamAddressbook['id'] === (int) $aArgs['Contact']->AddressBookId;
+                $isItsMe = isset($aArgs['Contact']->ExtendedInformation['ItsMe']) && $aArgs['Contact']->ExtendedInformation['ItsMe'];
+                $isReadOnly = isset($aArgs['Contact']->ExtendedInformation['ReadOnly']) && $aArgs['Contact']->ExtendedInformation['ReadOnly'];
+
+                if (!($isSuperAdmin || ($isTenantAndCanEdit && !$isReadOnly && $isCorrectTeamAddressbook) || $isItsMe)) {
                     throw new ApiException(\Aurora\System\Notifications::AccessDenied, null, 'AccessDenied');
                 }
             }
         }
     }
 
-    public function onBeforeUpdateAddressBook(&$aArgs, &$mResult) 
+    public function onBeforeUpdateAddressBook(&$aArgs, &$mResult)
     {
         $addressbook = Backend::Carddav()->getAddressBookById($aArgs['EntityId']);
         if ($addressbook && $addressbook['uri'] === 'gab') {
