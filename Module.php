@@ -34,6 +34,10 @@ class Module extends \Aurora\System\Module\AbstractModule
 
     protected $teamAddressBook = null;
 
+    protected $storagesMapToAddressbooks = [
+        StorageType::Team => Constants::ADDRESSBOOK_TEAM_NAME
+    ];
+
     public function init()
     {
         $this->subscribeEvent('Contacts::GetAddressBooks::after', array($this, 'onAfterGetAddressBooks'));
@@ -55,6 +59,7 @@ class Module extends \Aurora\System\Module\AbstractModule
         $this->subscribeEvent('Core::DeleteUser::after', array($this, 'onAfterDeleteUser'));
 
         $this->subscribeEvent('Contacts::UpdateContactObject::before', array($this, 'onBeforeUpdateContactObject'));
+        $this->subscribeEvent('Contacts::GetStoragesMapToAddressbooks::after', array($this, 'onAfterGetStoragesMapToAddressbooks'));
     }
 
     /**
@@ -361,5 +366,10 @@ class Module extends \Aurora\System\Module\AbstractModule
         if ($addressbook && $addressbook['uri'] === 'gab') {
             throw new ApiException(\Aurora\System\Notifications::AccessDenied, null, 'AccessDenied');
         }
+    }
+
+    public function onAfterGetStoragesMapToAddressbooks(&$aArgs, &$mResult)
+    {
+        $mResult = array_merge($mResult, $this->storagesMapToAddressbooks);
     }
 }
