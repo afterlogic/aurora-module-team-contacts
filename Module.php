@@ -206,7 +206,7 @@ class Module extends \Aurora\System\Module\AbstractModule
         $authenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
         $teamAddressbook = $this->GetTeamAddressbook($authenticatedUser->Id);
         if ($teamAddressbook) {
-            if ($mResult && $authenticatedUser && $mResult->Storage == $teamAddressbook['id']) {
+            if ($mResult && $authenticatedUser && $mResult->AddressBookId == $teamAddressbook['id']) {
                 $allowEditTeamContactsByTenantAdmins = ContactsModule::getInstance()->oModuleSettings->AllowEditTeamContactsByTenantAdmins;
                 $isUserTenantAdmin = $authenticatedUser->Role === UserRole::TenantAdmin;
                 $isContactInTenant = $mResult->IdTenant === $authenticatedUser->IdTenant;
@@ -353,7 +353,9 @@ class Module extends \Aurora\System\Module\AbstractModule
                 $isItsMe = isset($aArgs['Contact']->ExtendedInformation['ItsMe']) && $aArgs['Contact']->ExtendedInformation['ItsMe'];
                 $isReadOnly = isset($aArgs['Contact']->ExtendedInformation['ReadOnly']) && $aArgs['Contact']->ExtendedInformation['ReadOnly'];
 
-                if (!($isSuperAdmin || ($isTenant && !$isReadOnly && $isCorrectTeamAddressbook) || $isItsMe)) {
+                if ($isSuperAdmin || ($isTenant && !$isReadOnly && $isCorrectTeamAddressbook) || $isItsMe) {
+                    $test = 1;
+                } else {
                     throw new ApiException(\Aurora\System\Notifications::AccessDenied, null, 'AccessDenied');
                 }
             }
