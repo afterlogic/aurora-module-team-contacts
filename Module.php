@@ -99,8 +99,8 @@ class Module extends \Aurora\System\Module\AbstractModule
              */
             $mResult[] = [
                 'Id' => 'team',
-                'EntityId' => $addressbook['id'],
-                'CTag' => $addressbook['{http://sabredav.org/ns}sync-token'],
+                'EntityId' => (int) $addressbook['id'],
+                'CTag' => (int) $addressbook['{http://sabredav.org/ns}sync-token'],
                 'Display' => true,
                 'Order' => 1,
                 'DisplayName' => $addressbook['{DAV:}displayname'],
