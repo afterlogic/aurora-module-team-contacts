@@ -2,7 +2,6 @@
 
 use Afterlogic\DAV\Backend;
 use Aurora\Modules\Contacts\Enums\StorageType;
-use Aurora\Modules\Contacts\Models\Contact;
 use Aurora\Modules\Contacts\Models\ContactCard;
 use Aurora\Modules\Core\Models\Tenant;
 use Illuminate\Database\Migrations\Migration;
@@ -37,7 +36,7 @@ class MigrateTeamContacts extends Migration
                 $addressbook = $this->getTeamAddressBook($tenant->Id);
 
                 if ($addressbook) {
-                    Contact::where('Storage', StorageType::Team)
+                    Capsule::connection()->table('contacts')->where('Storage', StorageType::Team)
                         ->where('IdTenant', $tenant->Id)
                         ->orderBy('Id')->chunk(100000, function ($rows) use ($addressbook) {
                         foreach ($rows as $row) {
