@@ -11,6 +11,7 @@ use Afterlogic\DAV\Backend;
 use Afterlogic\DAV\Constants;
 use Aurora\Api;
 use Aurora\Modules\Contacts\Enums\StorageType;
+use Aurora\Modules\Contacts\Models\ContactCard;
 use Aurora\Modules\Contacts\Module as ContactsModule;
 use Aurora\System\Enums\UserRole;
 use Sabre\VObject\UUIDUtil;
@@ -60,6 +61,9 @@ class Module extends \Aurora\System\Module\AbstractModule
 
         $this->subscribeEvent('Contacts::UpdateContactObject::before', array($this, 'onBeforeUpdateContactObject'));
         $this->subscribeEvent('Contacts::GetStoragesMapToAddressbooks::after', array($this, 'onAfterGetStoragesMapToAddressbooks'));
+
+        $this->subscribeEvent('Contacts::CheckAccessToObject::after', array($this, 'onAfterCheckAccessToObject'));
+        $this->subscribeEvent('Core::GetGroupContactsEmails', array($this, 'onGetGroupContactsEmails'));
     }
 
     /**
@@ -373,5 +377,36 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onAfterGetStoragesMapToAddressbooks(&$aArgs, &$mResult)
     {
         $mResult = array_merge($mResult, $this->storagesMapToAddressbooks);
+    }
+
+    public function onGetGroupContactsEmails(&$aArgs, &$mResult)
+    {
+        $oUser = $aArgs['User'];
+        $oGroup = $aArgs['Group'];
+        if ($oUser && $oGroup) {
+            $abook = $this->GetTeamAddressbook($oUser->Id);
+            if ($abook) {
+                if ($oGroup->IsAll) {
+                    $mResult = ContactCard::where('AddressBookId', $abook['id'])->get()->map(
+                            function (ContactCard $oContact) {
+                                if (!empty($oContact->FullName)) {
+                                    return '"' . $oContact->FullName . '"' . '<' . $oContact->ViewEmail . '>';
+                                } else {
+                                    return $oContact->ViewEmail;
+                                }
+                            }
+                    )->toArray();
+                } else {
+                    $mResult = $oGroup->Users->map(function ($oUser) use ($abook) {
+                        $oContact = ContactCard::where('IdUser', $oUser->Id)->where('AddressBookId', $abook['id'])->first();
+                        if ($oContact && !empty($oContact->FullName)) {
+                            return '"' . $oContact->FullName . '"' . '<' . $oUser->PublicId . '>';
+                        } else {
+                            return $oUser->PublicId;
+                        }
+                    })->toArray();
+                }
+            }
+        }
     }
 }
