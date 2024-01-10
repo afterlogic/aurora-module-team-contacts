@@ -30,7 +30,7 @@ class MigrateTeamContacts extends Migration
      */
     public function up()
     {
-        Tenant::orderBy('Id')->chunk(100000, function ($tenants) {
+        Capsule::connection()->table('tenants')->orderBy('Id')->chunk(100000, function ($tenants) {
             foreach ($tenants as $tenant) {
                 
                 $addressbook = $this->getTeamAddressBook($tenant->Id);
@@ -76,7 +76,7 @@ class MigrateTeamContacts extends Migration
      */
     public function down() 
     {
-        Tenant::orderBy('Id')->chunk(100000, function ($tenants) {
+        Capsule::connection()->table('tenants')->orderBy('Id')->chunk(100000, function ($tenants) {
             foreach ($tenants as $tenant) {
                 $addressbook = $this->getTeamAddressBook($tenant->Id);
                 if ($addressbook) {
