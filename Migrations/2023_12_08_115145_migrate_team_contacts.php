@@ -3,7 +3,6 @@
 use Afterlogic\DAV\Backend;
 use Aurora\Modules\Contacts\Enums\StorageType;
 use Aurora\Modules\Contacts\Models\ContactCard;
-use Aurora\Modules\Core\Models\Tenant;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Sabre\DAV\UUIDUtil;
@@ -30,7 +29,7 @@ class MigrateTeamContacts extends Migration
      */
     public function up()
     {
-        Capsule::connection()->table('tenants')->orderBy('Id')->chunk(100000, function ($tenants) {
+        Capsule::connection()->table('core_tenants')->orderBy('Id')->chunk(100000, function ($tenants) {
             foreach ($tenants as $tenant) {
                 
                 $addressbook = $this->getTeamAddressBook($tenant->Id);
@@ -76,7 +75,7 @@ class MigrateTeamContacts extends Migration
      */
     public function down() 
     {
-        Capsule::connection()->table('tenants')->orderBy('Id')->chunk(100000, function ($tenants) {
+        Capsule::connection()->table('core_tenants')->orderBy('Id')->chunk(100000, function ($tenants) {
             foreach ($tenants as $tenant) {
                 $addressbook = $this->getTeamAddressBook($tenant->Id);
                 if ($addressbook) {
