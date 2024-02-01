@@ -229,7 +229,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 				$aArgs['UserId'],
 				StorageType::Team,
 				0,
-				$aArgs['Limit'],
+				0,
 				$aArgs['SortField'],
 				$aArgs['SortOrder'],
 				$aArgs['Search']
