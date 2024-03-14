@@ -31,38 +31,38 @@ class MigrateTeamContacts extends Migration
     {
         Capsule::connection()->table('core_tenants')->orderBy('Id')->chunk(100000, function ($tenants) {
             foreach ($tenants as $tenant) {
-                
+
                 $addressbook = $this->getTeamAddressBook($tenant->Id);
 
                 if ($addressbook) {
                     Capsule::connection()->table('contacts')->where('Storage', StorageType::Team)
                         ->where('IdTenant', $tenant->Id)
                         ->orderBy('Id')->chunk(100000, function ($rows) use ($addressbook) {
-                        foreach ($rows as $row) {
-                            try {
-                                $conactCard = ContactCard::where('AddressBookId', $addressbook['id'])->where('ViewEmail', $row->ViewEmail)->first();
-                                if (!$conactCard) {
-                                    $uid = UUIDUtil::getUUID();
-                                    $vcard = new \Sabre\VObject\Component\VCard(['UID' => $uid]);
-                                    $vcard->add(
-                                        'EMAIL',
-                                        $row->ViewEmail,
-                                        [
-                                            'type' => ['work'],
-                                            'pref' => 1,
-                                        ]
-                                    );
-                                    Backend::Carddav()->createCard($addressbook['id'], $uid . '.vcf', $vcard->serialize());
-                                } else {
-                                    \Aurora\System\Api::Log('Team contact already exists: ' . $row->ViewEmail, \Aurora\System\Enums\LogLevel::Error, 'contacts-migration-');
+                            foreach ($rows as $row) {
+                                try {
+                                    $conactCard = ContactCard::where('AddressBookId', $addressbook['id'])->where('ViewEmail', $row->ViewEmail)->first();
+                                    if (!$conactCard) {
+                                        $uid = UUIDUtil::getUUID();
+                                        $vcard = new \Sabre\VObject\Component\VCard(['UID' => $uid]);
+                                        $vcard->add(
+                                            'EMAIL',
+                                            $row->ViewEmail,
+                                            [
+                                                'type' => ['work'],
+                                                'pref' => 1,
+                                            ]
+                                        );
+                                        Backend::Carddav()->createCard($addressbook['id'], $uid . '.vcf', $vcard->serialize());
+                                    } else {
+                                        \Aurora\System\Api::Log('Team contact already exists: ' . $row->ViewEmail, \Aurora\System\Enums\LogLevel::Error, 'contacts-migration-');
+                                    }
+                                } catch (\Exception $e) {
+                                    \Aurora\System\Api::Log('Contact migration exception', \Aurora\System\Enums\LogLevel::Error, 'contacts-migration-');
+                                    \Aurora\System\Api::LogObject($row, \Aurora\System\Enums\LogLevel::Error, 'contacts-migration-');
+                                    \Aurora\System\Api::Log($e->getMessage(), \Aurora\System\Enums\LogLevel::Error, 'contacts-migration-');
                                 }
-                            } catch (\Exception $e) {
-                                \Aurora\System\Api::Log('Contact migration exception', \Aurora\System\Enums\LogLevel::Error, 'contacts-migration-');
-                                \Aurora\System\Api::LogObject($row, \Aurora\System\Enums\LogLevel::Error, 'contacts-migration-');
-                                \Aurora\System\Api::Log($e->getMessage(), \Aurora\System\Enums\LogLevel::Error, 'contacts-migration-');
                             }
-                        }
-                    });
+                        });
                 }
             }
         });
@@ -73,7 +73,7 @@ class MigrateTeamContacts extends Migration
      *
      * @return void
      */
-    public function down() 
+    public function down()
     {
         Capsule::connection()->table('core_tenants')->orderBy('Id')->chunk(100000, function ($tenants) {
             foreach ($tenants as $tenant) {
