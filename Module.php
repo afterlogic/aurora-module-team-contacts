@@ -192,7 +192,7 @@ class Module extends \Aurora\System\Module\AbstractModule
             $teamAddressbook = $this->GetTeamAddressbook($aArgs['UserId']);
             if ($teamAddressbook) {
                 foreach ($mResult['List'] as $iIndex => $aContact) {
-                    if ($aContact['Storage'] == $teamAddressbook['id']) {
+                    if (isset($aContact['AddressBookId']) && $aContact['AddressBookId'] == $teamAddressbook['id']) {
                         if ($aContact['ViewEmail'] === $userPublicId) {
                             $aContact['ItsMe'] = true;
                         } else {
