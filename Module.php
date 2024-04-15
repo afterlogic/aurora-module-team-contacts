@@ -108,7 +108,8 @@ class Module extends \Aurora\System\Module\AbstractModule
                 'Display' => true,
                 'Order' => 1,
                 'DisplayName' => $addressbook['{DAV:}displayname'],
-                'Uri' => $addressbook['uri']
+                'Uri' => $addressbook['uri'],
+                'Url' => $addressbook['uri'],
             ];
         }
     }
