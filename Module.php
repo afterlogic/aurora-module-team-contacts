@@ -161,7 +161,9 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $iUserId = isset($mResult) && (int) $mResult > 0 ? $mResult : 0;
 
-        return $this->createContactForUser($iUserId, $aArgs['PublicId']);
+        if ((int) $iUserId > 0) {
+            $mResult = $this->createContactForUser($iUserId, $aArgs['PublicId']);
+        }
     }
 
     public function onPrepareFiltersFromStorage(&$aArgs, &$mResult)
