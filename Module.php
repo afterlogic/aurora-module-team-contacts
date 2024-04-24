@@ -162,7 +162,7 @@ class Module extends \Aurora\System\Module\AbstractModule
         $iUserId = isset($mResult) && (int) $mResult > 0 ? $mResult : 0;
 
         if ((int) $iUserId > 0) {
-            $mResult = $this->createContactForUser($iUserId, $aArgs['PublicId']);
+            $this->createContactForUser($iUserId, $aArgs['PublicId']);
         }
     }
 
