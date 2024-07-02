@@ -52,8 +52,8 @@ class Module extends \Aurora\System\Module\AbstractModule
         $this->subscribeEvent('Contacts::CheckAccessToAddressBook::after', array($this, 'onAfterCheckAccessToAddressBook'));
         $this->subscribeEvent('Contacts::UpdateAddressBook::before', array($this, 'onBeforeUpdateAddressBook'));
 
-        $this->subscribeEvent('Contacts::PopulateStorage', array($this, 'populateStorage'));
-        $this->subscribeEvent('Contacts::CreateContact::before', array($this, 'populateStorage'));
+        $this->subscribeEvent('Contacts::PopulateContactArguments', array($this, 'populateContactArguments'));
+        $this->subscribeEvent('Contacts::CreateContact::before', array($this, 'populateContactArguments'));
         $this->subscribeEvent('Contacts::ContactQueryBuilder', array($this, 'onContactQueryBuilder'));
 
         $this->subscribeEvent('Core::DeleteUser::before', array($this, 'onBeforeDeleteUser'));
@@ -278,7 +278,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     /**
      *
      */
-    public function populateStorage(&$aArgs, &$mResult)
+    public function populateContactArguments(&$aArgs, &$mResult)
     {
         if (isset($aArgs['Storage'], $aArgs['UserId'])) {
             $aStorageParts = \explode('-', $aArgs['Storage']);
@@ -288,6 +288,8 @@ class Module extends \Aurora\System\Module\AbstractModule
                 if ($addressbook) {
                     $aArgs['Storage'] = StorageType::Team;
                     $aArgs['AddressBookId'] = $addressbook['id'];
+
+                    $mResult = true;
                 }
             }
         }
