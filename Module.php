@@ -17,6 +17,7 @@ use Aurora\System\Enums\UserRole;
 use Sabre\VObject\UUIDUtil;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Aurora\System\Exceptions\ApiException;
+use Aurora\Modules\Contacts\Enums\Access;
 
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
@@ -62,7 +63,6 @@ class Module extends \Aurora\System\Module\AbstractModule
         $this->subscribeEvent('Contacts::UpdateContactObject::before', array($this, 'onBeforeUpdateContactObject'));
         $this->subscribeEvent('Contacts::GetStoragesMapToAddressbooks::after', array($this, 'onAfterGetStoragesMapToAddressbooks'));
 
-        $this->subscribeEvent('Contacts::CheckAccessToObject::after', array($this, 'onAfterCheckAccessToObject'));
         $this->subscribeEvent('Core::GetGroupContactsEmails', array($this, 'onGetGroupContactsEmails'));
     }
 
@@ -122,10 +122,10 @@ class Module extends \Aurora\System\Module\AbstractModule
 
         $oUser = Api::getUserById($UserId);
         if ($oUser) {
-            $sPrincipalUri = \Afterlogic\DAV\Constants::PRINCIPALS_PREFIX . $oUser->IdTenant . '_' . \Afterlogic\DAV\Constants::DAV_TENANT_PRINCIPAL;
+            $sPrincipalUri = Constants::PRINCIPALS_PREFIX . $oUser->IdTenant . '_' . Constants::DAV_TENANT_PRINCIPAL;
             $addressbook = Backend::Carddav()->getAddressBookForUser($sPrincipalUri, 'gab');
             if (!$addressbook) {
-                if (Backend::Carddav()->createAddressBook($sPrincipalUri, 'gab', ['{DAV:}displayname' => \Afterlogic\DAV\Constants::ADDRESSBOOK_TEAM_DISPLAY_NAME])) {
+                if (Backend::Carddav()->createAddressBook($sPrincipalUri, 'gab', ['{DAV:}displayname' => Constants::ADDRESSBOOK_TEAM_DISPLAY_NAME])) {
                     $addressbook = Backend::Carddav()->getAddressBookForUser($sPrincipalUri, 'gab');
                 }
             }
@@ -246,20 +246,6 @@ class Module extends \Aurora\System\Module\AbstractModule
         }
     }
 
-    public function onAfterCheckAccessToObject(&$aArgs, &$mResult)
-    {
-        $oUser = $aArgs['User'];
-        $oContact = isset($aArgs['Contact']) ? $aArgs['Contact'] : null;
-        $teamAddressBook = $this->GetTeamAddressbook($oUser->Id);
-        if ($oContact instanceof \Aurora\Modules\Contacts\Classes\Contact && $oContact->AddressBookId === $teamAddressBook['id']) {
-            if ($oUser->Role !== UserRole::SuperAdmin && $oUser->IdTenant !== $oContact->IdTenant) {
-                $mResult = false;
-            } else {
-                $mResult = true;
-            }
-        }
-    }
-
     public function onGetContactSuggestions(&$aArgs, &$mResult)
     {
         if ($aArgs['Storage'] === 'all' || $aArgs['Storage'] === StorageType::Team) {
@@ -340,11 +326,42 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onAfterCheckAccessToAddressBook(&$aArgs, &$mResult)
     {
         if (isset($aArgs['User'], $aArgs['AddressBookId'])) {
-            $addressbook = $this->GetTeamAddressbook($aArgs['User']->Id);
+            $oUser = $aArgs['User'];
+            $addressbook = $this->GetTeamAddressbook($oUser->Id);
             if ($addressbook && $addressbook['id'] == $aArgs['AddressBookId']) {
-                $mResult = true;
+                if ($aArgs['Access'] === Access::Write && $oUser->UserRole !== UserRole::SuperAdmin) {
+                    if ($oUser->UserRole === UserRole::TenantAdmin && ContactsModule::getInstance()->oModuleSettings->AllowEditTeamContactsByTenantAdmins) {
+                        $mResult = true;
+                    } else {
+                        $mResult = false;
+                    }
+                } else {
+                    $mResult = true;
+                }
+                return true;
+            }
+        }
+    }
 
-                return $mResult;
+    public function onAfterCheckAccessToObject(&$aArgs, &$mResult)
+    {
+        $oUser = $aArgs['User'] ?? null;
+        $oContact = $aArgs['Contact'] ?? null;
+
+        if ($oUser) {
+            $teamAddressBook = $this->GetTeamAddressbook($oUser->Id);
+            if ($oContact instanceof \Aurora\Modules\Contacts\Classes\Contact && (int) $oContact->AddressBookId === (int) $teamAddressBook['id']) {
+                if ($aArgs['Access'] === Access::Write && $aArgs['User']->UserRole !== UserRole::SuperAdmin) {
+                    if ((isset($oContact->ExtendedInformation['ItsMe']) && $oContact->ExtendedInformation['ItsMe']) || // ItsMe
+                        ($oUser->Role === UserRole::TenantAdmin && ContactsModule::getInstance()->oModuleSettings->AllowEditTeamContactsByTenantAdmins)) {
+                        $mResult = true;
+                    } else {
+                        $mResult = false;
+                    }
+                } else { // is SuperAdmin
+                    $mResult = true;
+                }
+                return true;
             }
         }
     }
@@ -352,17 +369,18 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onBeforeUpdateContactObject(&$aArgs, &$mResult)
     {
         $user = Api::getAuthenticatedUser();
+        $oContact = $aArgs['Contact'] ?? null;
 
-        if ($user && isset($aArgs['Contact'])) {
-            $addressbook = Backend::Carddav()->getAddressBookById($aArgs['Contact']->AddressBookId);
+        if ($user && $oContact) {
+            $addressbook = Backend::Carddav()->getAddressBookById($oContact->AddressBookId);
             if ($addressbook['uri'] === 'gab') {
                 $teamAddressbook = $this->GetTeamAddressbook($user->Id);
 
                 $isSuperAdmin = $user->Role === UserRole::SuperAdmin;
                 $isTenant = $user->Role === UserRole::TenantAdmin;
-                $isCorrectTeamAddressbook = $teamAddressbook['id'] == $aArgs['Contact']->AddressBookId;
-                $isItsMe = isset($aArgs['Contact']->ExtendedInformation['ItsMe']) && $aArgs['Contact']->ExtendedInformation['ItsMe'];
-                $isReadOnly = isset($aArgs['Contact']->ExtendedInformation['ReadOnly']) && $aArgs['Contact']->ExtendedInformation['ReadOnly'];
+                $isCorrectTeamAddressbook = $teamAddressbook['id'] == $oContact->AddressBookId;
+                $isItsMe = isset($oContact->ExtendedInformation['ItsMe']) && $oContact->ExtendedInformation['ItsMe'];
+                $isReadOnly = isset($oContact->ExtendedInformation['ReadOnly']) && $oContact->ExtendedInformation['ReadOnly'];
 
                 if (!($isSuperAdmin || ($isTenant && !$isReadOnly && $isCorrectTeamAddressbook) || $isItsMe)) {
                     throw new ApiException(\Aurora\System\Notifications::AccessDenied, null, 'AccessDenied');
