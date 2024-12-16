@@ -129,6 +129,9 @@ class Module extends \Aurora\System\Module\AbstractModule
                     $addressbook = Backend::Carddav()->getAddressBookForUser($sPrincipalUri, 'gab');
                 }
             }
+            if ($addressbook) {
+                $addressbook['id_tenant'] = $oUser->IdTenant;
+            }
         }
 
         return $addressbook;
@@ -191,14 +194,20 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onAfterGetContacts($aArgs, &$mResult)
     {
         if (\is_array($mResult) && \is_array($mResult['List'])) {
-            $userPublicId = Api::getUserPublicIdById($aArgs['UserId']);
+            $user = Api::getUserById($aArgs['UserId']);
             $teamAddressbook = $this->GetTeamAddressbook($aArgs['UserId']);
-            if ($teamAddressbook) {
+
+            if ($user && $teamAddressbook) {
+                $authenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
                 foreach ($mResult['List'] as $iIndex => $aContact) {
+                    $allowEditTeamContactsByTenantAdmins = ContactsModule::getInstance()->oModuleSettings->AllowEditTeamContactsByTenantAdmins;
+                    $isUserTenantAdmin = $authenticatedUser->Role === UserRole::TenantAdmin && $user->IdTenant === $authenticatedUser->IdTenant;
+
                     if (isset($aContact['AddressBookId']) && $aContact['AddressBookId'] == $teamAddressbook['id']) {
-                        if ($aContact['ViewEmail'] === $userPublicId) {
+                        $aContact['ReadOnly'] = false;
+                        if ($aContact['ViewEmail'] === $user->PublicId) {
                             $aContact['ItsMe'] = true;
-                        } else {
+                        } elseif (!(($allowEditTeamContactsByTenantAdmins && $isUserTenantAdmin) || $authenticatedUser->isAdmin())) {
                             $aContact['ReadOnly'] = true;
                         }
                         $mResult['List'][$iIndex] = $aContact;
@@ -214,12 +223,13 @@ class Module extends \Aurora\System\Module\AbstractModule
         $teamAddressbook = $this->GetTeamAddressbook($authenticatedUser->Id);
         if ($teamAddressbook) {
             if ($mResult && $authenticatedUser && $mResult->AddressBookId == $teamAddressbook['id']) {
+                $mResult->IdTenant = $teamAddressbook['id_tenant'] ?? 0;
                 $allowEditTeamContactsByTenantAdmins = ContactsModule::getInstance()->oModuleSettings->AllowEditTeamContactsByTenantAdmins;
                 $isUserTenantAdmin = $authenticatedUser->Role === UserRole::TenantAdmin;
                 $isContactInTenant = $mResult->IdTenant === $authenticatedUser->IdTenant;
                 if ($mResult->BusinessEmail === $authenticatedUser->PublicId) {
                     $mResult->ExtendedInformation['ItsMe'] = true;
-                } elseif (!($allowEditTeamContactsByTenantAdmins && $isUserTenantAdmin && $isContactInTenant)) {
+                } elseif (!(($allowEditTeamContactsByTenantAdmins && $isUserTenantAdmin && $isContactInTenant) || $authenticatedUser->isAdmin())) {
                     $mResult->ExtendedInformation['ReadOnly'] = true;
                 }
             }
