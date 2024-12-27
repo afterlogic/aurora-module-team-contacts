@@ -384,6 +384,13 @@ class Module extends \Aurora\System\Module\AbstractModule
         if ($user && $oContact) {
             $addressbook = Backend::Carddav()->getAddressBookById($oContact->AddressBookId);
             if ($addressbook['uri'] === 'gab') {
+
+                // no one can edit the BusinessEmail property because Contact has a relationship with User on this property,
+                // so if the property was changed, then we return the previous value
+                $oOldContact = ContactCard::firstWhere('CardId', $oContact->Id);
+                if ($oOldContact && $oContact->BusinessEmail != $oOldContact->BusinessEmail) {
+                    $oContact->BusinessEmail = $oOldContact->BusinessEmail;
+                }
                 $teamAddressbook = $this->GetTeamAddressbook($user->Id);
 
                 $isSuperAdmin = $user->Role === UserRole::SuperAdmin;
