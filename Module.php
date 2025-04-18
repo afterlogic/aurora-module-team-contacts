@@ -64,7 +64,6 @@ class Module extends \Aurora\System\Module\AbstractModule
         $this->subscribeEvent('Contacts::GetStoragesMapToAddressbooks::after', array($this, 'onAfterGetStoragesMapToAddressbooks'));
 
         $this->subscribeEvent('Core::GetGroupContactsEmails', array($this, 'onGetGroupContactsEmails'));
-        $this->subscribeEvent('Contacts::getContactsCollection', array($this, 'onGetContactsCollection'));
     }
 
     /**
@@ -186,9 +185,6 @@ class Module extends \Aurora\System\Module\AbstractModule
                         ELSE false
                     END as IsTeam'
                     ));
-
-                    $aArgs['Query']->addSelect('cu.Id as TeamUserId');
-                    $aArgs['Query']->leftJoin('core_users as cu', 'contacts_cards.BusinessEmail', '=', "cu.PublicId");
                 }
                 $mResult = $mResult->orWhere('adav_cards.addressbookid', $addressbook['id']);
             }
@@ -451,18 +447,6 @@ class Module extends \Aurora\System\Module\AbstractModule
                     })->toArray();
                 }
             }
-        }
-    }
-
-    public function onGetContactsCollection(&$aArgs, &$mResult)
-    {
-        if ($mResult) {
-            $mResult->each(function ($contact) {
-                if ($contact->IsTeam && $contact->TeamUserId) {
-                    $contact->UserId = $contact->TeamUserId;
-                }
-                unset($contact->TeamUserId);
-            });
         }
     }
 }
