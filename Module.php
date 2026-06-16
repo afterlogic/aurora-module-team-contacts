@@ -438,7 +438,7 @@ class Module extends \Aurora\System\Module\AbstractModule
                     )->toArray();
                 } else {
                     $mResult = $oGroup->Users->map(function ($oUser) use ($abook) {
-                        $oContact = ContactCard::where('IdUser', $oUser->Id)->where('AddressBookId', $abook['id'])->first();
+                        $oContact = ContactCard::where('ViewEmail', $oUser->PublicId)->where('AddressBookId', $abook['id'])->first();
                         if ($oContact && !empty($oContact->FullName)) {
                             return '"' . $oContact->FullName . '"' . '<' . $oUser->PublicId . '>';
                         } else {
