@@ -199,10 +199,10 @@ class Module extends \Aurora\System\Module\AbstractModule
 
             if ($user && $teamAddressbook) {
                 $authenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
-                foreach ($mResult['List'] as $iIndex => $aContact) {
-                    $allowEditTeamContactsByTenantAdmins = ContactsModule::getInstance()->oModuleSettings->AllowEditTeamContactsByTenantAdmins;
-                    $isUserTenantAdmin = $authenticatedUser->Role === UserRole::TenantAdmin && $user->IdTenant === $authenticatedUser->IdTenant;
+                $allowEditTeamContactsByTenantAdmins = ContactsModule::getInstance()->oModuleSettings->AllowEditTeamContactsByTenantAdmins;
+                $isUserTenantAdmin = $authenticatedUser->Role === UserRole::TenantAdmin && $user->IdTenant === $authenticatedUser->IdTenant;
 
+                foreach ($mResult['List'] as $iIndex => $aContact) {
                     if (isset($aContact['AddressBookId']) && $aContact['AddressBookId'] == $teamAddressbook['id']) {
                         $aContact['ReadOnly'] = false;
                         if ($aContact['ViewEmail'] === $user->PublicId) {
