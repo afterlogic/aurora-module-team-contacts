@@ -177,7 +177,7 @@ class Module extends \Aurora\System\Module\AbstractModule
                     END as IsTeam'
                     ));
                 }
-                $mResult = $mResult->orWhere('adav_cards.addressbookid', $addressbook['id']);
+                $mResult = $mResult->orWhere('contacts_cards.AddressBookId', $addressbook['id']);
             }
         }
     }
